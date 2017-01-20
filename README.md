@@ -9,11 +9,11 @@ Home page documentation: [https://smbyc.bitbucket.io/md/stackcomposed](https://s
 
 ## Installation
 
-## Use
+## How to use
 
 ***
 
     GNU General Public License - GPLv3
-    Copyright (c) 2016 by Xavier Corredor Llano, SMBYC
+    Copyright (c) 2017 by Xavier Corredor Llano, SMBYC
     Sistema de Monitoreo de Bosques y Carbono
     Bogotá, Colombia
