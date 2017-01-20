@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+#  Copyright (C) 2016-2017 Xavier Corredor Llano, SMBYC
+#  Email: xcorredorl at ideam.gov.co
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+
+import os
+import argparse
+
+from stack_composed import stack_composed
+
+
+def script():
+    """Execute qc4sd if run as a script.
+
+        $ python3 stack-composed ...
+    """
+
+    # Create parser arguments
+    parser = argparse.ArgumentParser(
+        prog='stack_composed',
+        description='Compute and generate the composed of a raster images stack',
+        epilog="Copyright (C) Xavier Corredor Llano <xcorredorl@ideam.gov.co>\n"
+               "Sistema de Monitoreo de Bosques y Carbono - SMBYC",
+        formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('--start-date', type=str, dest='start_date', help='Initial date for composed format YYYY-MM-DD',
+                        required=False)
+    parser.add_argument('--end-date', type=str, dest='end_date', help='End date for composed format YYYY-MM-DD',
+                        required=False)
+    parser.add_argument('-stats', type=str, help='Statistic for compute the composed',
+                        choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'), required=True)
+    parser.add_argument('-output', type=str, help='output directory for save results', default=os.getcwd())
+    parser.add_argument('files', type=str, help='dir or files to process', nargs='*')
+
+    args = parser.parse_args()
+
+    stack_composed.run(args.stats, args.files, args.output, args.start_date, args.end_date)
+
+if __name__ == '__main__':
+    script()
