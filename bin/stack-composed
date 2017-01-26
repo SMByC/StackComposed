@@ -40,7 +40,7 @@ def script():
 
     parser.add_argument('-stats', type=str, help='Statistic for compute the composed',
                         choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'), required=True)
-    parser.add_argument('-bands', type=str, help='band or bands to process', required=True)
+    parser.add_argument('-bands', type=str, help='band or bands to process, e.g. 1,2,3', required=True)
     parser.add_argument('-start-date', type=valid_date, dest='start_date',
                         help='Initial date for composed format YYYY-MM-DD', required=False)
     parser.add_argument('-end-date', type=valid_date, dest='end_date',
