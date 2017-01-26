@@ -20,8 +20,17 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from stack_composed.image import Image
 
-def run(stats, files, output, start_date=None, end_date=None):
 
-    pass
+def run(stats, bands, inputs, output, start_date=None, end_date=None):
 
+    print(stats, inputs, output, start_date, end_date)
+
+    # search all Image files recursively if the files are directories
+    images_files = inputs
+
+    # load images
+    images = [Image(landsat_file) for landsat_file in images_files]
+
+    images[0].get_metadata()
