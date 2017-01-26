@@ -12,6 +12,7 @@
 
 import os
 import argparse
+from datetime import datetime
 
 from stack_composed import stack_composed
 
@@ -30,10 +31,17 @@ def script():
                "Sistema de Monitoreo de Bosques y Carbono - SMBYC",
         formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--start-date', type=str, dest='start_date', help='Initial date for composed format YYYY-MM-DD',
-                        required=False)
-    parser.add_argument('--end-date', type=str, dest='end_date', help='End date for composed format YYYY-MM-DD',
-                        required=False)
+    def valid_date(s):
+        try:
+            return datetime.strptime(s, "%Y-%m-%d").date()
+        except ValueError:
+            msg = "Not a valid date: '{0}'.".format(s)
+            raise argparse.ArgumentTypeError(msg)
+
+    parser.add_argument('-start-date', type=valid_date, dest='start_date',
+                        help='Initial date for composed format YYYY-MM-DD', required=False)
+    parser.add_argument('-end-date', type=valid_date, dest='end_date',
+                        help='End date for composed format YYYY-MM-DD', required=False)
     parser.add_argument('-stats', type=str, help='Statistic for compute the composed',
                         choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'), required=True)
     parser.add_argument('-output', type=str, help='output directory for save results', default=os.getcwd())
