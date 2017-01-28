@@ -10,6 +10,7 @@
 #  (at your option) any later version.
 #
 import datetime
+import os
 
 
 def calc_date(year, jday):
@@ -22,23 +23,37 @@ def parse_filename(file_path):
     """
 
     #### original structure of Landsat filename
+    #
+    # e.g. LE70080532002152EDC00SR_Enmask.tif
+    try:
+        filename = os.path.basename(file_path).split("_")[0].split(".")[0]
+        filename = filename.upper()
+        if filename[1] == "E":
+            sensor = "ETM"
+        if filename[1] in ["O", "C"]:
+            sensor = "OLI"
+        if filename[1] == "T":
+            sensor = "TM"
+        landsat_version = int(filename[2])
+        path = int(filename[3:6])
+        row = int(filename[6:9])
+        year = int(filename[9:13])
+        jday = int(filename[13:16])
+        date = calc_date(year, jday)
+        return landsat_version, sensor, path, row, date
+    except:
+        pass
 
-    landsat_id = file_path.split("_")[0].split(".")[0]
-    print(file_path)
-    print(landsat_id)
-    landsat_id = landsat_id.upper()
-    if landsat_id[1] == "E":
-        sensor = "ETM"
-    if landsat_id[1] in ["O", "C"]:
-        sensor = "OLI"
-    if landsat_id[1] == "T":
-        sensor = "TM"
-    landsat_version = int(landsat_id[2])
-    path = int(landsat_id[3:6])
-    row = int(landsat_id[6:9])
-    year = int(landsat_id[9:13])
-    jday = int(landsat_id[13:16])
-    date = calc_date(year, jday)
-    return sensor, landsat_version, path, row, date
-
-
+    #### SMBYC structure of Landsat filename
+    #
+    # e.g. Landsat_8_53_020601_7ETM_Reflec_SR_Enmask.tif
+    try:
+        filename = os.path.basename(file_path).split(".")[0]
+        path = int(filename.split("_")[1])
+        row = int(filename.split("_")[2])
+        date = datetime.datetime.strptime(filename.split("_")[3], "%y%m%d").date()
+        landsat_version = int(filename.split("_")[4][0])
+        sensor = filename.split("_")[4][1::]
+        return landsat_version, sensor, path, row, date
+    except:
+        pass
