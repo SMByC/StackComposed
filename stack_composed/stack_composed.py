@@ -19,16 +19,30 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import os
 
 from stack_composed.image import Image
+
+IMAGES_TYPES = ('.tif', '.TIF', 'img', 'IMG')
 
 
 def run(stats, bands, inputs, output, start_date=None, end_date=None):
 
     print(stats, inputs, output, start_date, end_date)
 
-    # search all Image files recursively if the files are directories
-    images_files = inputs
+    # search all Image files in inputs recursively if the files are in directories
+    images_files = []
+    for _input in inputs:
+        if os.path.isfile(_input):
+            if _input.endswith(IMAGES_TYPES):
+                images_files.append(os.path.abspath(_input))
+        elif os.path.isdir(_input):
+            for root, dirs, files in os.walk(_input):
+                if len(files) != 0:
+                    files = [os.path.join(root, x) for x in files if x.endswith(IMAGES_TYPES)]
+                    [images_files.append(os.path.abspath(file)) for file in files]
+
+    print(images_files)
 
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
