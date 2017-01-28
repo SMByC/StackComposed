@@ -22,6 +22,8 @@ def parse_filename(file_path):
     Extract metadata from filename
     """
 
+    #### LANDSAT PARSE FILENAME ####
+
     #### original structure of Landsat filename
     #
     # e.g. LE70080532002152EDC00SR_Enmask.tif
@@ -57,3 +59,5 @@ def parse_filename(file_path):
         return landsat_version, sensor, path, row, date
     except:
         pass
+
+    raise Exception("Cannot parse filename for: {}".format(file_path))
