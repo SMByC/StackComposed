@@ -22,6 +22,7 @@
 import os
 
 from stack_composed.image import Image
+from stack_composed.stats import statistic
 
 IMAGES_TYPES = ('.tif', '.TIF', 'img', 'IMG')
 
@@ -42,9 +43,25 @@ def run(stats, bands, inputs, output, start_date=None, end_date=None):
                     files = [os.path.join(root, x) for x in files if x.endswith(IMAGES_TYPES)]
                     [images_files.append(os.path.abspath(file)) for file in files]
 
+    # load bands
+    if isinstance(bands, int):
+        bands = [bands]
+    if not isinstance(bands, list):
+        bands = [int(b) for b in bands.split(',')]
+
     print(images_files)
 
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
 
-    images[0].get_metadata()
+    #images[0].get_metadata()
+
+    # Calculate the statistics
+    for band in bands:
+        print(statistic("median", images, band))
+
+
+
+
+
+
