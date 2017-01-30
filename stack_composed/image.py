@@ -19,10 +19,26 @@ class Image:
 
     def __init__(self, file_path):
         self.file_path = file_path
+        # setting the extent, pixel sizes and projection
+        self.get_geoproperties()
 
-    def get_extent(self):
-        # TODO
-        self.extent = None
+    def get_geoproperties(self):
+        data = gdal.Open(self.file_path, gdal.GA_ReadOnly)
+        min_x, x_res, x_skew, max_y, y_skew, y_res = data.GetGeoTransform()
+        max_x = min_x + (data.RasterXSize * x_res)
+        min_y = max_y + (data.RasterYSize * y_res)
+        # extent
+        self.extent = [round(min_x, 5), round(max_y, 5), round(max_x, 5), round(min_y, 5)]
+        print()
+        print(self.extent)
+        # pixel sizes
+        self.x_res = abs(float(x_res))
+        self.y_res = abs(float(y_res))
+        # projection
+        outRasterSRS = gdal.osr.SpatialReference()
+        outRasterSRS.ImportFromWkt(data.GetProjectionRef())
+        self.projection = outRasterSRS
+        data = None
 
     def get_metadata(self):
         # TODO
