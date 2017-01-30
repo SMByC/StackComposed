@@ -20,6 +20,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import gdal
+import numpy as np
 
 from stack_composed.image import Image
 from stack_composed.stats import statistic
@@ -54,7 +56,12 @@ def run(stats, bands, inputs, output, start_date=None, end_date=None):
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
 
-    #images[0].get_metadata()
+    # get global extent
+    min_x = min([image.extent[0] for image in images])
+    max_y = max([image.extent[1] for image in images])
+    max_x = max([image.extent[2] for image in images])
+    min_y = min([image.extent[3] for image in images])
+    global_extent = [min_x, max_y, max_x, min_y]
 
     # Calculate the statistics
     for band in bands:
