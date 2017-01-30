@@ -63,12 +63,8 @@ def run(stats, bands, inputs, output, start_date=None, end_date=None):
     min_y = min([image.extent[3] for image in images])
     global_extent = [min_x, max_y, max_x, min_y]
 
-    # Calculate the statistics
-    for band in bands:
-        print(statistic("median", images, band))
-
-
-
-
-
-
+    # define the global matrix
+    global_x_res = images[0].x_res
+    global_y_res = images[0].y_res
+    global_shape = (int((max_y-min_y)/global_y_res), int((max_x-min_x)/global_x_res))  # (y,x)
+    global_matrix = np.full(global_shape, np.nan)
