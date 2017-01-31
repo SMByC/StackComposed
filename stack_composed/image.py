@@ -32,7 +32,8 @@ class Image:
         max_x = min_x + (data.RasterXSize * x_res)
         min_y = max_y + (data.RasterYSize * y_res)
         # extent
-        self.extent = [round(min_x, 5), round(max_y, 5), round(max_x, 5), round(min_y, 5)]
+        #self.extent = [round(min_x, 5), round(max_y, 5), round(max_x, 5), round(min_y, 5)]
+        self.extent = [min_x, max_y, max_x, min_y]
         print()
         print(self.extent)
         # pixel sizes
