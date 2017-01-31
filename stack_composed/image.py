@@ -34,8 +34,6 @@ class Image:
         # extent
         #self.extent = [round(min_x, 5), round(max_y, 5), round(max_x, 5), round(min_y, 5)]
         self.extent = [min_x, max_y, max_x, min_y]
-        print()
-        print(self.extent)
         # pixel sizes
         self.x_res = abs(float(x_res))
         self.y_res = abs(float(y_res))
