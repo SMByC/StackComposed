@@ -28,11 +28,26 @@ from stack_composed.stats import statistic
 
 IMAGES_TYPES = ('.tif', '.TIF', 'img', 'IMG')
 
+header = \
+'''==============================================================
 
-def run(stats, bands, inputs, output, start_date=None, end_date=None):
+StackComposed
 
-    print(stats, inputs, output, start_date, end_date)
+  Compute and generate the composed of a raster images stack
 
+Run with '-h' for more options or visit the documentation:
+https://smbyc.bitbucket.io/md/stackcomposed
+
+Copyright (C) 2016-2017 Xavier Corredor Llano
+Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO
+
+=============================================================='''
+
+
+def run(stat, bands, inputs, output, start_date=None, end_date=None):
+    print(header)
+
+    print("\nRead and loading images... ", end='')
     # search all Image files in inputs recursively if the files are in directories
     images_files = []
     for _input in inputs:
