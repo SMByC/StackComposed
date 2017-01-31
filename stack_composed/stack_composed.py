@@ -20,6 +20,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import warnings
 import gdal
 import numpy as np
 
@@ -45,6 +46,8 @@ Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO
 
 
 def run(stat, bands, inputs, output, start_date=None, end_date=None):
+    # ignore warnings
+    warnings.filterwarnings("ignore")
     print(header)
 
     print("\nRead and loading images... ", end='')
