@@ -69,20 +69,57 @@ def run(stat, bands, inputs, output, start_date=None, end_date=None):
     if not isinstance(bands, list):
         bands = [int(b) for b in bands.split(',')]
 
-    print(images_files)
-
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
 
-    # get global extent
+    print("Done")
+    print("  images to process: {0}".format(len(images_files)))
+    print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
+
+    # get wrapper extent
     min_x = min([image.extent[0] for image in images])
     max_y = max([image.extent[1] for image in images])
     max_x = max([image.extent[2] for image in images])
     min_y = min([image.extent[3] for image in images])
-    global_extent = [min_x, max_y, max_x, min_y]
+    Image.wrapper_extent = [min_x, max_y, max_x, min_y]
 
-    # define the global matrix
-    global_x_res = images[0].x_res
-    global_y_res = images[0].y_res
-    global_shape = (int((max_y-min_y)/global_y_res), int((max_x-min_x)/global_x_res))  # (y,x)
-    global_matrix = np.full(global_shape, np.nan)
+    # define the properties for the raster wrapper
+    Image.wrapper_x_res = images[0].x_res
+    Image.wrapper_y_res = images[0].y_res
+    Image.wrapper_shape = (int((max_y-min_y)/Image.wrapper_y_res), int((max_x-min_x)/Image.wrapper_x_res))  # (y,x)
+
+    for band in bands:
+
+        print("\nProcessing the {} for band {} in {} images... ".format(stat, band, len(images)), end='')
+
+        # Calculate the statistics
+        output_array = statistic(stat, images, band)
+
+        #### save result
+        output_filename = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
+        # create output raster
+        driver = gdal.GetDriverByName('GTiff')
+        nbands = 1
+        outRaster = driver.Create(output_filename, Image.wrapper_shape[1], Image.wrapper_shape[0],
+                                  nbands, gdal.GDT_Float32)
+
+        # write bands
+        outband = outRaster.GetRasterBand(nbands)
+        outband.WriteArray(output_array)
+        # nodata value
+        outband.SetNoDataValue(np.nan)
+
+        # set projection and geotransform
+        outRaster.SetProjection(images[0].projection.ExportToWkt())
+        outRaster.SetGeoTransform((Image.wrapper_extent[0], Image.wrapper_x_res, 0,
+                                   Image.wrapper_extent[1], 0, -Image.wrapper_y_res))
+
+        # clean
+        outRaster = None
+
+        print("Done")
+
+    print("\nProcess completed!")
+
+
+
