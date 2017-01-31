@@ -14,7 +14,7 @@ import os
 import argparse
 from datetime import datetime
 
-from stack_composed import stack_composed
+from stack_composed import stack_composed, epilog
 
 
 def script():
@@ -25,10 +25,9 @@ def script():
 
     # Create parser arguments
     parser = argparse.ArgumentParser(
-        prog='stack_composed',
+        prog='stack-composed',
         description='Compute and generate the composed of a raster images stack',
-        epilog="Copyright (C) Xavier Corredor Llano <xcorredorl@ideam.gov.co>\n"
-               "Sistema de Monitoreo de Bosques y Carbono - SMBYC",
+        epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter)
 
     def valid_date(s):
