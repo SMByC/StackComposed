@@ -38,7 +38,7 @@ def script():
             msg = "not a valid date: '{0}'".format(s)
             raise argparse.ArgumentTypeError(msg)
 
-    parser.add_argument('-stats', type=str, help='Statistic for compute the composed',
+    parser.add_argument('-stat', type=str, help='Statistic for compute the composed',
                         choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'), required=True)
     parser.add_argument('-bands', type=str, help='band or bands to process, e.g. 1,2,3', required=True)
     parser.add_argument('-start-date', type=valid_date, dest='start_date',
@@ -50,7 +50,7 @@ def script():
 
     args = parser.parse_args()
 
-    stack_composed.run(args.stats, args.bands, args.inputs, args.output, args.start_date, args.end_date)
+    stack_composed.run(args.stat, args.bands, args.inputs, args.output, args.start_date, args.end_date)
 
 if __name__ == '__main__':
     script()
