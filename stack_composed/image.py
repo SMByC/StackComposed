@@ -16,6 +16,10 @@ from stack_composed.parse import parse_filename
 
 
 class Image:
+    wrapper_extent = None
+    wrapper_x_res = None
+    wrapper_y_res = None
+    wrapper_shape = None
 
     def __init__(self, file_path):
         self.file_path = file_path
@@ -55,7 +59,22 @@ class Image:
 
         return raster_band
 
+    def get_raster_band_adjusted(self, band):
+        """
+        Get the raster band adjusted into the wrapper matrix
+        """
+        # get from:to x and y for put this raster data into the wrapper matrix
+        # the count (from:to) starts from left-upper corner
+        xw_min = round((self.extent[0] - Image.wrapper_extent[0]) / Image.wrapper_x_res)
+        xw_max = round(Image.wrapper_shape[1] - (Image.wrapper_extent[2] - self.extent[2]) / Image.wrapper_x_res)
+        yw_min = round((Image.wrapper_extent[1] - self.extent[1]) / Image.wrapper_y_res)
+        yw_max = round(Image.wrapper_shape[0] - (self.extent[3] - Image.wrapper_extent[3]) / Image.wrapper_y_res)
+        # create a nan matrix wrapper
+        wrapper_matrix = np.full(Image.wrapper_shape, np.nan)
+        # fill with the raster data in the corresponding position
+        wrapper_matrix[yw_min:yw_max, xw_min:xw_max] = self.get_raster_band(band)
 
+        return wrapper_matrix
 
 
 

@@ -14,10 +14,7 @@ import numpy as np
 
 def statistic(stat, images, band):
     # get the numpy 3rd dimension array stack of the bands in chunks (x_chunk and y_chunk)
-    raster_layerstack = np.dstack([image.get_raster_band(band) for image in images])
-
-
-    raster_layerstack = np.dstack([a, b])
+    raster_layerstack = np.dstack([image.get_raster_band_adjusted(band) for image in images])
 
     # call built in numpy statistical functions, with a specified axis. if
     # axis=2 means it will calculate along the 'depth' axis, per pixel.
