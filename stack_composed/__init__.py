@@ -19,6 +19,9 @@ General Public License - GPLv3
 
 epilog = \
 '''
+For more information visit:
+https://smbyc.bitbucket.io/md/stackcomposed
+
 Copyright (C) Xavier Corredor Llano <xcorredorl@ideam.gov.co>
 Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO
 General Public License - GPLv3'''
