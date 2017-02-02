@@ -31,7 +31,7 @@ from stack_composed.stats import statistic
 IMAGES_TYPES = ('.tif', '.TIF', 'img', 'IMG')
 
 
-def run(stat, bands, inputs, output, start_date=None, end_date=None):
+def run(stat, bands, inputs, output, output_type, start_date=None, end_date=None):
     # ignore warnings
     warnings.filterwarnings("ignore")
     print(header)
@@ -82,12 +82,27 @@ def run(stat, bands, inputs, output, start_date=None, end_date=None):
         output_array = statistic(stat, images, band)
 
         #### save result
+        # filename
         output_filename = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
+        # choose the default data type based on the statistic
+        if output_type is None:
+            if stat in ['median', 'pixels_valid', 'last_valid_pixel', 'max_value']:
+                gdal_output_type = gdal.GDT_UInt16
+            if stat in ['std', 'snr']:
+                gdal_output_type = gdal.GDT_Float32
+        else:
+            if output_type == 'byte': gdal_output_type = gdal.GDT_Byte
+            if output_type == 'uint16': gdal_output_type = gdal.GDT_UInt16
+            if output_type == 'uint32': gdal_output_type = gdal.GDT_UInt32
+            if output_type == 'int16': gdal_output_type = gdal.GDT_Int16
+            if output_type == 'int32': gdal_output_type = gdal.GDT_Int32
+            if output_type == 'float32': gdal_output_type = gdal.GDT_Float32
+            if output_type == 'float64': gdal_output_type = gdal.GDT_Float64
         # create output raster
         driver = gdal.GetDriverByName('GTiff')
         nbands = 1
         outRaster = driver.Create(output_filename, Image.wrapper_shape[1], Image.wrapper_shape[0],
-                                  nbands, gdal.GDT_Float32)
+                                  nbands, gdal_output_type)
 
         # write bands
         outband = outRaster.GetRasterBand(nbands)

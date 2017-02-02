@@ -37,19 +37,23 @@ def script():
             msg = "not a valid date: '{0}'".format(s)
             raise argparse.ArgumentTypeError(msg)
 
-    parser.add_argument('-stat', type=str, help='Statistic for compute the composed',
-                        choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'), required=True)
+    parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True,
+                        choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'))
     parser.add_argument('-bands', type=str, help='band or bands to process, e.g. 1,2,3', required=True)
     parser.add_argument('-start', type=valid_date, dest='start_date',
                         help='Initial date for composed format YYYY-MM-DD', required=False)
     parser.add_argument('-end', type=valid_date, dest='end_date',
                         help='End date for composed format YYYY-MM-DD', required=False)
-    parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results', default=os.getcwd())
+    parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
+                        default=os.getcwd())
+    parser.add_argument('-ot', type=str, dest='output_type', help='output data type for results', required=False,
+                        choices=('byte', 'uint16', 'uint32', 'int16', 'int32', 'float32', 'float64'))
     parser.add_argument('inputs', type=str, help='directories or images files to process', nargs='*')
 
     args = parser.parse_args()
 
-    stack_composed.run(args.stat, args.bands, args.inputs, args.output, args.start_date, args.end_date)
+    stack_composed.run(args.stat, args.bands, args.inputs, args.output, args.output_type,
+                       args.start_date, args.end_date)
 
 if __name__ == '__main__':
     script()
