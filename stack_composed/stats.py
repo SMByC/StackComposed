@@ -16,7 +16,7 @@ def statistic(stat, images, band):
     # create a 3d raster stack with dask
     list_stack = [da.from_array(image.get_raster_band_adjusted(band), (1000, 1000)) for image in images]
     da_raster_stack = da.dstack(list_stack)
-    # stack = stack.rechunk(5,5,1)
+    da_raster_stack = da_raster_stack.rechunk(1000, 1000, len(list_stack))
 
     # call built in numpy statistical functions, with a specified axis. if
     # axis=2 means it will calculate along the 'depth' axis, per pixel.
