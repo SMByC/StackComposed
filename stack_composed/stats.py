@@ -9,12 +9,14 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-import numpy as np
+import dask.array as da
 
 
 def statistic(stat, images, band):
-    # get the numpy 3rd dimension array stack of the bands in chunks (x_chunk and y_chunk)
-    raster_layerstack = np.dstack([image.get_raster_band_adjusted(band) for image in images])
+    # create a 3d raster stack with dask
+    list_stack = [da.from_array(image.get_raster_band_adjusted(band), (1000, 1000)) for image in images]
+    da_raster_stack = da.dstack(list_stack)
+    # stack = stack.rechunk(5,5,1)
 
     # call built in numpy statistical functions, with a specified axis. if
     # axis=2 means it will calculate along the 'depth' axis, per pixel.
@@ -22,6 +24,6 @@ def statistic(stat, images, band):
     #
     # Calculate the median statistical
     if stat == 'median':
-        output_array = np.nanmedian(raster_layerstack, axis=2)
+        output_array = da.nanmean(da_raster_stack, axis=2).compute()
         return output_array
         # Calculate the mean statistical
