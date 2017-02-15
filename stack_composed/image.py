@@ -24,9 +24,9 @@ class Image:
     def __init__(self, file_path):
         self.file_path = file_path
         # setting the extent, pixel sizes and projection
-        self.get_geoproperties()
+        self.set_geoproperties()
 
-    def get_geoproperties(self):
+    def set_geoproperties(self):
         data = gdal.Open(self.file_path, gdal.GA_ReadOnly)
         min_x, x_res, x_skew, max_y, y_skew, y_res = data.GetGeoTransform()
         max_x = min_x + (data.RasterXSize * x_res)
@@ -43,13 +43,24 @@ class Image:
         self.projection = outRasterSRS
         data = None
 
+    def set_bounds(self):
+        # bounds for image with respect to wrapper
+        # the 0,0 is left-upper corner
+        self.xi_min = round((self.extent[0] - Image.wrapper_extent[0]) / Image.wrapper_x_res)
+        self.xi_max = round(Image.wrapper_shape[1] - (Image.wrapper_extent[2] - self.extent[2]) / Image.wrapper_x_res)
+        self.yi_min = round((Image.wrapper_extent[1] - self.extent[1]) / Image.wrapper_y_res)
+        self.yi_max = round(Image.wrapper_shape[0] - (self.extent[3] - Image.wrapper_extent[3]) / Image.wrapper_y_res)
+
     def get_metadata(self):
         # TODO
         print(parse_filename(self.file_path))
 
-    def get_raster_band(self, band):
+    def get_chunk_band(self, band, xoff, xsize, yoff, ysize):
+        """
+        Get the array of the band for the respective chunk
+        """
         dataset = gdal.Open(self.file_path, gdal.GA_ReadOnly)
-        raster_band = dataset.GetRasterBand(band).ReadAsArray()
+        raster_band = dataset.GetRasterBand(band).ReadAsArray(xoff, yoff, xsize, ysize)
         raster_band = raster_band.astype(np.float32)
 
         # convert the no data value and zero to NaN
@@ -58,22 +69,45 @@ class Image:
 
         return raster_band
 
-    def get_wrapper_raster_band(self, band):
+    def get_chunk_band_in_wrapper(self, band, xc, xc_size, yc, yc_size):
         """
-        Get the raster band adjusted into the wrapper matrix
+        Get the array of the band adjusted into the wrapper matrix for the respective chunk
         """
-        # get from:to x and y for put this raster data into the wrapper matrix
-        # the count (from:to) starts from left-upper corner
-        xw_min = round((self.extent[0] - Image.wrapper_extent[0]) / Image.wrapper_x_res)
-        xw_max = round(Image.wrapper_shape[1] - (Image.wrapper_extent[2] - self.extent[2]) / Image.wrapper_x_res)
-        yw_min = round((Image.wrapper_extent[1] - self.extent[1]) / Image.wrapper_y_res)
-        yw_max = round(Image.wrapper_shape[0] - (self.extent[3] - Image.wrapper_extent[3]) / Image.wrapper_y_res)
-        # create a nan matrix wrapper
-        wrapper_matrix = np.full(Image.wrapper_shape, np.nan)
-        # fill with the raster data in the corresponding position
-        wrapper_matrix[yw_min:yw_max, xw_min:xw_max] = self.get_raster_band(band)
+        # bounds for chunk with respect to wrapper
+        # the 0,0 is left-upper corner
+        xc_min = xc
+        xc_max = xc+xc_size
+        yc_min = yc
+        yc_max = yc+yc_size
+        # initialize the chunk with a nan matrix
+        chunk_matrix = np.full((yc_size, xc_size), np.nan)
 
-        return wrapper_matrix
+        # check if the current chunk is outside of the image
+        if xc_min>=self.xi_max or xc_max<=self.xi_min or yc_min>=self.yi_max or yc_max<=self.yi_min:
+            return chunk_matrix
+        else:
+            # set bounds for get the array chunk in image
+            xoff = 0 if xc_min <= self.xi_min else xc_min - self.xi_min
+            xsize = xc_max - self.xi_min if xc_min <= self.xi_min else self.xi_max - xc_min
+            yoff = 0 if yc_min <= self.yi_min else yc_min - self.yi_min
+            ysize = yc_max - self.yi_min if yc_min <= self.yi_min else self.yi_max - yc_min
+
+            # adjust to maximum size with respect to chunk or/and image
+            xsize = xc_size if xsize > xc_size else xsize
+            xsize = self.xi_max - self.xi_min if xsize > self.xi_max - self.xi_min else xsize
+            ysize = yc_size if ysize > yc_size else ysize
+            ysize = self.yi_max - self.yi_min if ysize > self.yi_max - self.yi_min else ysize
+
+            # set bounds for fill in chunk matrix
+            x_min = self.xi_min - xc_min if xc_min <= self.xi_min else 0
+            x_max = x_min + xsize if x_min + xsize < xc_max else xc_max
+            y_min = self.yi_min - yc_min if yc_min <= self.yi_min else 0
+            y_max = y_min + ysize if y_min + ysize < yc_max else yc_max
+
+            # fill with the chunk data of the image in the corresponding position
+            chunk_matrix[y_min:y_max, x_min:x_max] = self.get_chunk_band(band, xoff, xsize, yoff, ysize)
+
+            return chunk_matrix
 
 
 

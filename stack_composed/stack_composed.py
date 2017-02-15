@@ -74,6 +74,9 @@ def run(stat, bands, inputs, output, output_type, start_date=None, end_date=None
     Image.wrapper_y_res = images[0].y_res
     Image.wrapper_shape = (int((max_y-min_y)/Image.wrapper_y_res), int((max_x-min_x)/Image.wrapper_x_res))  # (y,x)
 
+    # set bounds for all images
+    [image.set_bounds() for image in images]
+
     for band in bands:
 
         print("\nProcessing the {} for band {} in {} images... ".format(stat, band, len(images)), end='')

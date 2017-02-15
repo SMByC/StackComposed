@@ -11,6 +11,7 @@
 #
 import dask.array as da
 import numpy as np
+from dask import multiprocessing
 
 from stack_composed.image import Image
 
@@ -18,13 +19,9 @@ from stack_composed.image import Image
 def statistic(stat, images, band):
     # create a empty initial wrapper raster for managed dask parallel
     # in chunks and storage result
-    chunksize = 500
+    chunksize = 2000
     wrapper_array = da.empty(Image.wrapper_shape, chunks=chunksize)
-
-    # create a 3d raster stack with dask
-    list_stack = [da.from_array(image.get_wrapper_raster_band(band), (1000, 1000)) for image in images]
-    da_raster_stack = da.dstack(list_stack)
-    da_raster_stack = da_raster_stack.rechunk(1000, 1000, len(list_stack))
+    chunksize = wrapper_array.chunks[0][0]
 
     # call built in numpy statistical functions, with a specified axis. if
     # axis=2 means it will calculate along the 'depth' axis, per pixel.
@@ -37,18 +34,20 @@ def statistic(stat, images, band):
     # Calculate the mean statistical
 
     def calc(block, block_id=None, chunksize=None):
-        y = block_id[0] * chunksize
-        y_size = block.shape[0]
-        x = block_id[1] * chunksize
-        x_size = block.shape[1]
+        yc = block_id[0] * chunksize
+        yc_size = block.shape[0]
+        xc = block_id[1] * chunksize
+        xc_size = block.shape[1]
 
         # make stack reading all images only in specific chunk
-        stack_chunk = np.stack([image.get_wrapper_raster_band(band)[y:y + y_size, x:x + x_size]
+        stack_chunk = np.stack([image.get_chunk_band_in_wrapper(band, xc, xc_size, yc, yc_size)
                                 for image in images], axis=2)
 
         return stat_func(stack_chunk)
 
-    map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize)
-    result_array = map_blocks.compute(num_workers=1)
+    # process
+    map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
+    #result_array = map_blocks.compute(num_workers=8, get=multiprocessing.get)
+    result_array = map_blocks.compute(num_workers=20)
 
     return result_array
