@@ -14,7 +14,7 @@ import dask.array as da
 
 def statistic(stat, images, band):
     # create a 3d raster stack with dask
-    list_stack = [da.from_array(image.get_raster_band_adjusted(band), (1000, 1000)) for image in images]
+    list_stack = [da.from_array(image.get_wrapper_raster_band(band), (1000, 1000)) for image in images]
     da_raster_stack = da.dstack(list_stack)
     da_raster_stack = da_raster_stack.rechunk(1000, 1000, len(list_stack))
 

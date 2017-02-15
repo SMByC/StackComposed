@@ -58,7 +58,7 @@ class Image:
 
         return raster_band
 
-    def get_raster_band_adjusted(self, band):
+    def get_wrapper_raster_band(self, band):
         """
         Get the raster band adjusted into the wrapper matrix
         """
