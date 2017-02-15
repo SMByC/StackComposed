@@ -16,10 +16,9 @@ from dask import multiprocessing
 from stack_composed.image import Image
 
 
-def statistic(stat, images, band):
+def statistic(stat, images, band, num_process, chunksize):
     # create a empty initial wrapper raster for managed dask parallel
     # in chunks and storage result
-    chunksize = 1000
     wrapper_array = da.empty(Image.wrapper_shape, chunks=chunksize)
     chunksize = wrapper_array.chunks[0][0]
 
@@ -47,7 +46,7 @@ def statistic(stat, images, band):
 
     # process
     map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
+    result_array = map_blocks.compute(num_workers=num_process)
     #result_array = map_blocks.compute(num_workers=8, get=multiprocessing.get)
-    result_array = map_blocks.compute(num_workers=30)
 
     return result_array

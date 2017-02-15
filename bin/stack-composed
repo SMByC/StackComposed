@@ -9,10 +9,10 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-
 import os
 import argparse
 from datetime import datetime
+from multiprocessing import cpu_count
 
 from stack_composed import stack_composed, epilog
 
@@ -40,6 +40,10 @@ def script():
     parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True,
                         choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'))
     parser.add_argument('-bands', type=str, help='band or bands to process, e.g. 1,2,3', required=True)
+    parser.add_argument('-p', type=int, default=cpu_count() - 1,
+                        help='number of process', required=False)
+    parser.add_argument('-chunks', type=int, default=1000,
+                        help='chunks size for parallel process', required=False)
     parser.add_argument('-start', type=valid_date, dest='start_date',
                         help='Initial date for composed format YYYY-MM-DD', required=False)
     parser.add_argument('-end', type=valid_date, dest='end_date',
@@ -52,7 +56,7 @@ def script():
 
     args = parser.parse_args()
 
-    stack_composed.run(args.stat, args.bands, args.inputs, args.output, args.output_type,
+    stack_composed.run(args.stat, args.bands, args.inputs, args.output, args.output_type, args.p, args.chunks,
                        args.start_date, args.end_date)
 
 if __name__ == '__main__':

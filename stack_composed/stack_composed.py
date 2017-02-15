@@ -31,7 +31,7 @@ from stack_composed.stats import statistic
 IMAGES_TYPES = ('.tif', '.TIF', 'img', 'IMG')
 
 
-def run(stat, bands, inputs, output, output_type, start_date=None, end_date=None):
+def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_date=None, end_date=None):
     # ignore warnings
     warnings.filterwarnings("ignore")
     print(header)
@@ -82,7 +82,7 @@ def run(stat, bands, inputs, output, output_type, start_date=None, end_date=None
         print("\nProcessing the {} for band {} in {} images... ".format(stat, band, len(images)), end='')
 
         # Calculate the statistics
-        output_array = statistic(stat, images, band)
+        output_array = statistic(stat, images, band, num_process, chunksize)
 
         #### save result
         # filename
