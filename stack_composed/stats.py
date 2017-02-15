@@ -30,7 +30,7 @@ def statistic(stat, images, band):
     # Calculate the median statistical
     if stat == 'median':
         def stat_func(stack_chunk):
-            return np.nanmean(stack_chunk, axis=2)
+            return np.nanmedian(stack_chunk, axis=2)
     # Calculate the mean statistical
 
     def calc(block, block_id=None, chunksize=None):
@@ -47,7 +47,7 @@ def statistic(stat, images, band):
 
     # process
     map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
-    #result_array = map_blocks.compute(num_workers=8, get=multiprocessing.get)
-    result_array = map_blocks.compute(num_workers=20)
+    result_array = map_blocks.compute(num_workers=8, get=multiprocessing.get)
+    #result_array = map_blocks.compute(num_workers=20)
 
     return result_array
