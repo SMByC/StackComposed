@@ -23,7 +23,7 @@ class Image:
 
     def __init__(self, file_path):
         self.file_path = file_path
-        # set geoproperties:
+        # ### set geoproperties ###
         # setting the extent, pixel sizes and projection
         gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
         min_x, x_res, x_skew, max_y, y_skew, y_res = gdal_file.GetGeoTransform()
@@ -37,7 +37,7 @@ class Image:
         self.y_res = abs(float(y_res))
         # projection
         self.projection = gdal_file.GetProjectionRef()
-        gdal_file = None
+        del gdal_file
 
     def set_bounds(self):
         # bounds for image with respect to wrapper
@@ -62,7 +62,7 @@ class Image:
         # convert the no data value and zero to NaN
         no_data_value = gdal_file.GetRasterBand(band).GetNoDataValue()
         raster_band[raster_band == no_data_value] = np.nan
-        gdal_file = None
+        del gdal_file
 
         return raster_band
 
