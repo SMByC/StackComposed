@@ -34,6 +34,11 @@ def statistic(stat, images, band, num_process, chunksize):
     if stat == 'mean':
         def stat_func(stack_chunk):
             return np.nanmean(stack_chunk, axis=2)
+    # Calculate the valid pixels statistical
+    # this count the valid data (no nans) across the z-axis
+    if stat == 'valid_pixels':
+        def stat_func(stack_chunk):
+            return stack_chunk.shape[2] - np.isnan(stack_chunk).sum(axis=2)
 
     def calc(block, block_id=None, chunksize=None):
         yc = block_id[0] * chunksize

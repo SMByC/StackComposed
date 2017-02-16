@@ -1,6 +1,6 @@
 # StackComposed
 
-Compute each pixel value of all the images in the input stack for generate the composed of the median, maximum value, pixels valid, last pixel valid and others.
+Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, maximum value, valid pixels, last pixel valid and others.
 
 ## Installation
 

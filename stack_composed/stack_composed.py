@@ -94,10 +94,15 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         output_filename = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
         # choose the default data type based on the statistic
         if output_type is None:
-            if stat in ['median', 'mean', 'pixels_valid', 'last_valid_pixel', 'max_value']:
+            if stat in ['median', 'mean', 'last_valid_pixel', 'max_value']:
                 gdal_output_type = gdal.GDT_UInt16
             if stat in ['std', 'snr']:
                 gdal_output_type = gdal.GDT_Float32
+            if stat in ['valid_pixels']:
+                if len(images) < 256:
+                    gdal_output_type = gdal.GDT_Byte
+                else:
+                    gdal_output_type = gdal.GDT_UInt16
         else:
             if output_type == 'byte': gdal_output_type = gdal.GDT_Byte
             if output_type == 'uint16': gdal_output_type = gdal.GDT_UInt16
