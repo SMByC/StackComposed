@@ -42,6 +42,10 @@ def statistic(stat, images, band, num_process, chunksize):
     if stat == 'min':
         def stat_func(stack_chunk):
             return np.nanmin(stack_chunk, axis=2)
+    # Calculate the standard deviation statistical
+    if stat == 'std':
+        def stat_func(stack_chunk):
+            return np.nanstd(stack_chunk, axis=2)
     # Calculate the valid pixels statistical
     # this count the valid data (no nans) across the z-axis
     if stat == 'valid_pixels':
