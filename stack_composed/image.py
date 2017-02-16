@@ -23,14 +23,12 @@ class Image:
 
     def __init__(self, file_path):
         self.file_path = file_path
+        # set geoproperties:
         # setting the extent, pixel sizes and projection
-        self.set_geoproperties()
-
-    def set_geoproperties(self):
-        data = gdal.Open(self.file_path, gdal.GA_ReadOnly)
-        min_x, x_res, x_skew, max_y, y_skew, y_res = data.GetGeoTransform()
-        max_x = min_x + (data.RasterXSize * x_res)
-        min_y = max_y + (data.RasterYSize * y_res)
+        gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
+        min_x, x_res, x_skew, max_y, y_skew, y_res = gdal_file.GetGeoTransform()
+        max_x = min_x + (gdal_file.RasterXSize * x_res)
+        min_y = max_y + (gdal_file.RasterYSize * y_res)
         # extent
         #self.extent = [round(min_x, 5), round(max_y, 5), round(max_x, 5), round(min_y, 5)]
         self.extent = [min_x, max_y, max_x, min_y]
@@ -38,8 +36,8 @@ class Image:
         self.x_res = abs(float(x_res))
         self.y_res = abs(float(y_res))
         # projection
-        self.projection = data.GetProjectionRef()
-        data = None
+        self.projection = gdal_file.GetProjectionRef()
+        gdal_file = None
 
     def set_bounds(self):
         # bounds for image with respect to wrapper
@@ -57,13 +55,14 @@ class Image:
         """
         Get the array of the band for the respective chunk
         """
-        dataset = gdal.Open(self.file_path, gdal.GA_ReadOnly)
-        raster_band = dataset.GetRasterBand(band).ReadAsArray(xoff, yoff, xsize, ysize)
+        gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
+        raster_band = gdal_file.GetRasterBand(band).ReadAsArray(xoff, yoff, xsize, ysize)
         raster_band = raster_band.astype(np.float32)
 
         # convert the no data value and zero to NaN
-        no_data_value = dataset.GetRasterBand(band).GetNoDataValue()
+        no_data_value = gdal_file.GetRasterBand(band).GetNoDataValue()
         raster_band[raster_band == no_data_value] = np.nan
+        gdal_file = None
 
         return raster_band
 
