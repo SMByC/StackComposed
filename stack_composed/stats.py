@@ -31,6 +31,9 @@ def statistic(stat, images, band, num_process, chunksize):
         def stat_func(stack_chunk):
             return np.nanmedian(stack_chunk, axis=2)
     # Calculate the mean statistical
+    if stat == 'mean':
+        def stat_func(stack_chunk):
+            return np.nanmean(stack_chunk, axis=2)
 
     def calc(block, block_id=None, chunksize=None):
         yc = block_id[0] * chunksize

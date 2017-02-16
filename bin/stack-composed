@@ -38,7 +38,7 @@ def script():
             raise argparse.ArgumentTypeError(msg)
 
     parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True,
-                        choices=('median', 'pixels_valid', 'last_valid_pixel', 'max_value'))
+                        choices=('median', 'mean', 'pixels_valid', 'last_valid_pixel', 'max_value'))
     parser.add_argument('-bands', type=str, help='band or bands to process, e.g. 1,2,3', required=True)
     parser.add_argument('-p', type=int, default=cpu_count() - 1,
                         help='number of process', required=False)
