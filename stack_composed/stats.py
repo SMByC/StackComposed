@@ -39,7 +39,7 @@ def statistic(stat, images, band, num_process, chunksize):
         xc_size = block.shape[1]
 
         # make stack reading all images only in specific chunk
-        stack_chunk = np.stack([image.get_chunk_band_in_wrapper(band, xc, xc_size, yc, yc_size)
+        stack_chunk = np.stack([image.get_chunk_in_wrapper(band, xc, xc_size, yc, yc_size)
                                 for image in images], axis=2)
 
         return stat_func(stack_chunk)

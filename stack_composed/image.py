@@ -53,7 +53,7 @@ class Image:
         # TODO
         print(parse_filename(self.file_path))
 
-    def get_chunk_band(self, band, xoff, xsize, yoff, ysize):
+    def get_chunk(self, band, xoff, xsize, yoff, ysize):
         """
         Get the array of the band for the respective chunk
         """
@@ -67,7 +67,7 @@ class Image:
 
         return raster_band
 
-    def get_chunk_band_in_wrapper(self, band, xc, xc_size, yc, yc_size):
+    def get_chunk_in_wrapper(self, band, xc, xc_size, yc, yc_size):
         """
         Get the array of the band adjusted into the wrapper matrix for the respective chunk
         """
@@ -103,7 +103,7 @@ class Image:
             y_max = y_min + ysize if y_min + ysize < yc_max else yc_max
 
             # fill with the chunk data of the image in the corresponding position
-            chunk_matrix[y_min:y_max, x_min:x_max] = self.get_chunk_band(band, xoff, xsize, yoff, ysize)
+            chunk_matrix[y_min:y_max, x_min:x_max] = self.get_chunk(band, xoff, xsize, yoff, ysize)
 
             return chunk_matrix
 
