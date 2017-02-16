@@ -23,6 +23,7 @@ import os
 import warnings
 import gdal
 import numpy as np
+from dask.diagnostics import ProgressBar
 
 from stack_composed import header
 from stack_composed.image import Image
@@ -77,9 +78,13 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # set bounds for all images
     [image.set_bounds() for image in images]
 
+    # registered Dask progress bar
+    pbar = ProgressBar()
+    pbar.register()
+
     for band in bands:
 
-        print("\nProcessing the {} for band {} in {} images... ".format(stat, band, len(images)), end='')
+        print("\nProcessing the {} for band {}:".format(stat, band))
 
         # Calculate the statistics
         output_array = statistic(stat, images, band, num_process, chunksize)
@@ -121,9 +126,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
                                    Image.wrapper_extent[1], 0, -Image.wrapper_y_res))
 
         # clean
-        outRaster = None
-
-        print("Done")
+        del outRaster
 
     print("\nProcess completed!")
 
