@@ -114,7 +114,9 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         outband.SetNoDataValue(np.nan)
 
         # set projection and geotransform
-        outRaster.SetProjection(images[0].projection.ExportToWkt())
+        outRasterSRS = gdal.osr.SpatialReference()
+        outRasterSRS.ImportFromWkt(images[0].projection)
+        outRaster.SetProjection(outRasterSRS.ExportToWkt())
         outRaster.SetGeoTransform((Image.wrapper_extent[0], Image.wrapper_x_res, 0,
                                    Image.wrapper_extent[1], 0, -Image.wrapper_y_res))
 

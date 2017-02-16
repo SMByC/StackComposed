@@ -46,7 +46,6 @@ def statistic(stat, images, band, num_process, chunksize):
 
     # process
     map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
-    result_array = map_blocks.compute(num_workers=num_process)
-    #result_array = map_blocks.compute(num_workers=8, get=multiprocessing.get)
+    result_array = map_blocks.compute(num_workers=num_process, get=multiprocessing.get)
 
     return result_array

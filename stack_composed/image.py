@@ -38,9 +38,7 @@ class Image:
         self.x_res = abs(float(x_res))
         self.y_res = abs(float(y_res))
         # projection
-        outRasterSRS = gdal.osr.SpatialReference()
-        outRasterSRS.ImportFromWkt(data.GetProjectionRef())
-        self.projection = outRasterSRS
+        self.projection = data.GetProjectionRef()
         data = None
 
     def set_bounds(self):
