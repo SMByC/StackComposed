@@ -37,7 +37,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     warnings.filterwarnings("ignore")
     print(header)
 
-    print("\nRead and loading images... ", end='')
+    print("\nLoading images in path and calculate the wrapper matrix:")
     # search all Image files in inputs recursively if the files are in directories
     images_files = []
     for _input in inputs:
@@ -59,10 +59,6 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
 
-    print("Done")
-    print("  images to process: {0}".format(len(images_files)))
-    print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
-
     # get wrapper extent
     min_x = min([image.extent[0] for image in images])
     max_y = max([image.extent[1] for image in images])
@@ -74,6 +70,12 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     Image.wrapper_x_res = images[0].x_res
     Image.wrapper_y_res = images[0].y_res
     Image.wrapper_shape = (int((max_y-min_y)/Image.wrapper_y_res), int((max_x-min_x)/Image.wrapper_x_res))  # (y,x)
+
+    # some information about process
+    print("  images to process: {0}".format(len(images_files)))
+    print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
+    print("  pixels size: {0} x {1}".format(Image.wrapper_x_res, Image.wrapper_y_res))
+    print("  wrapper size: {0} x {1} pixels".format(Image.wrapper_shape[1], Image.wrapper_shape[0]))
 
     # set bounds for all images
     [image.set_bounds() for image in images]
