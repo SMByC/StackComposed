@@ -59,9 +59,11 @@ class Image:
         raster_band = gdal_file.GetRasterBand(band).ReadAsArray(xoff, yoff, xsize, ysize)
         raster_band = raster_band.astype(np.float32)
 
-        # convert the no data value and zero to NaN
+        # convert the no data values to NaN
         no_data_value = gdal_file.GetRasterBand(band).GetNoDataValue()
         raster_band[raster_band == no_data_value] = np.nan
+        # convert the values <= 0 to NaN
+        raster_band[raster_band <= 0] = np.nan
         del gdal_file
 
         return raster_band
