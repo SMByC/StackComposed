@@ -74,8 +74,8 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # some information about process
     print("  images to process: {0}".format(len(images_files)))
     print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
-    print("  pixels size: {0} x {1}".format(Image.wrapper_x_res, Image.wrapper_y_res))
-    print("  wrapper size: {0} x {1} pixels".format(round(Image.wrapper_shape[1], 1), round(Image.wrapper_shape[0], 1)))
+    print("  pixels size: {0} x {1}".format(round(Image.wrapper_x_res, 1), round(Image.wrapper_y_res, 1)))
+    print("  wrapper size: {0} x {1} pixels".format(Image.wrapper_shape[1], Image.wrapper_shape[0]))
 
     # set bounds for all images
     [image.set_bounds() for image in images]
