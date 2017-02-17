@@ -37,7 +37,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     warnings.filterwarnings("ignore")
     print(header)
 
-    print("\nLoading images in path and calculate the wrapper matrix:")
+    print("\nLoading images in path(s) and calculating the wrapper extent:")
     # search all Image files in inputs recursively if the files are in directories
     images_files = []
     for _input in inputs:
@@ -75,7 +75,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     print("  images to process: {0}".format(len(images_files)))
     print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
     print("  pixels size: {0} x {1}".format(Image.wrapper_x_res, Image.wrapper_y_res))
-    print("  wrapper size: {0} x {1} pixels".format(Image.wrapper_shape[1], Image.wrapper_shape[0]))
+    print("  wrapper size: {0} x {1} pixels".format(round(Image.wrapper_shape[1], 1), round(Image.wrapper_shape[0], 1)))
 
     # set bounds for all images
     [image.set_bounds() for image in images]
