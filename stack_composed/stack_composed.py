@@ -85,15 +85,24 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     pbar.register()
 
     for band in bands:
+        # check and set the output file before process
+        if os.path.isdir(output):
+            output_filename = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
+        elif output.endswith((".tif", ".TIF")) and os.path.isdir(os.path.dirname(output)):
+            output_filename = output
+        elif output.endswith((".tif", ".TIF")) and os.path.dirname(output) == '':
+            output_filename = os.path.join(os.getcwd(), output)
+        else:
+            print("\nError: Setting the output filename, wrong directory and/or\n"
+                  "       filename: {}\n".format(output))
+            exit(1)
 
-        print("\nProcessing the {} for band {}:".format(stat, band))
-
+        ### process ###
         # Calculate the statistics
+        print("\nProcessing the {} for band {}:".format(stat, band))
         output_array = statistic(stat, images, band, num_process, chunksize)
 
-        #### save result
-        # filename
-        output_filename = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
+        ### save result ###
         # choose the default data type based on the statistic
         if output_type is None:
             if stat in ['median', 'mean', 'max', 'min', 'last_valid_pixel']:

@@ -23,7 +23,7 @@ class Image:
 
     def __init__(self, file_path):
         self.file_path = file_path
-        # ### set geoproperties ###
+        ### set geoproperties ###
         # setting the extent, pixel sizes and projection
         gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
         min_x, x_res, x_skew, max_y, y_skew, y_res = gdal_file.GetGeoTransform()
