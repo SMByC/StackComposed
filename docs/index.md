@@ -1,13 +1,20 @@
 # StackComposed
 
-Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, maximum value, valid pixels, last pixel valid and others.
-
-## Installation
+Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, max, min, valid pixels and others statistics.
 
 ## Index:
-- [about](about.md)
+- [About](about.md)
+- [Installation](installation.md)
 - [How to use](how_to_use.md)
 
+## Source code
+
+The latest sources can be obtained from official repository:
+[https://bitbucket.org/SMBYC/stackcomposed](https://bitbucket.org/SMBYC/stackcomposed)
+
+## Issue Tracker
+
+Issues, bugs and enhancement: [https://bitbucket.org/SMBYC/stackcomposed/issues](https://bitbucket.org/SMBYC/stackcomposed/issues)
 
 ***
 

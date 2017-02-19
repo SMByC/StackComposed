@@ -1,5 +1,5 @@
 site_name: StackComposed
-site_description: Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, maximum value, valid pixels, last pixel valid and others.
+site_description: Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, max, min, valid pixels and others statistics.
 site_author: Xavier Corredor Llano, SMBYC-IDEAM
 #site_favicon: favicon_whale.png
 site_url: https://bitbucket.org/SMBYC/stackcomposed
@@ -7,4 +7,6 @@ repo_url: https://bitbucket.org/SMBYC/stackcomposed
 theme: flatly
 pages:
 - Home: index.md
-- Test: test.md
+- About: about.md
+- Installation: installation.md
+- How to use: how_to_use.md
