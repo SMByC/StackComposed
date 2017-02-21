@@ -1,7 +1,6 @@
-
 # StackComposed
  
-Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, max, min, valid pixels and others statistics.
+The StackComposed compute the stack composed of a specific statistic of band values for several time series of georeferenced data (such as Landsat images), even if these are in different scenes or tiles. The result is a output of statistic compute for all valid pixels values across the time axis (z-axis), in the wrapper extent for all input data in parallels process.
 
 ## Documentation
 
