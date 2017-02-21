@@ -1,6 +1,6 @@
 # StackComposed
 
-Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, max, min, valid pixels and others statistics.
+Compute each pixel value of all the images in the input stack for generate the composed of the median, mean, max, min, valid pixels and others statistics. (see more in [about](about.md) section)
 
 ## Index:
 - [About](about.md)

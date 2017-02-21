@@ -50,7 +50,7 @@ There are mainly two problems for serial process (no parallel):
 - When are several images (million of pixels) required a lot of time for the process
 - For load several images (data cube) for process required a lot of ram memory for do it
 
-For solved it, the StackComposed divide the data cube in equal chunks, each chunks are processes in parallel depends of the number of process assigned. When one chunk is being process, it load only the chunk part for all images and not load the entire image for do it, with this the StackComposed only required a ram memory enough only for the sizes and the number of chunks that are currently parallel process.
+For solved it, the StackComposed divide the data cube in equal chunks, each chunks are processes in parallel depends of the number of process assigned. When one chunk is being process, it load only the chunk part for all images and not load the entire image for do it, with this the StackComposed only required a ram memory enough only for the sizes and the number of chunks that are currently being processed in parallel.
 
 ![](img/chunks.png)
 
