@@ -1,5 +1,7 @@
 
 
+__version__ = '17.2.21'  # year.month.day
+
 
 header = \
 '''====================================================================
@@ -11,7 +13,7 @@ StackComposed
 Run with '-h' for more options or visit the documentation:
 https://smbyc.bitbucket.io/md/stackcomposed
 
-Copyright (C) 2016-2017 Xavier Corredor Llano
+Copyright (C) 2017 Xavier Corredor Llano
 Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO
 General Public License - GPLv3
 
