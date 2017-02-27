@@ -61,7 +61,8 @@ class Image:
 
         # convert the no data values to NaN
         no_data_value = gdal_file.GetRasterBand(band).GetNoDataValue()
-        raster_band[raster_band == no_data_value] = np.nan
+        if no_data_value is not None:
+            raster_band[raster_band == no_data_value] = np.nan
         # convert the values <= 0 to NaN
         raster_band[raster_band <= 0] = np.nan
         del gdal_file
