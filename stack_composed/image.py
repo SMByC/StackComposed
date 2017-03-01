@@ -16,10 +16,13 @@ from stack_composed.parse import parse_filename
 
 
 class Image:
+    # global wrapper matrix properties
     wrapper_extent = None
     wrapper_x_res = None
     wrapper_y_res = None
     wrapper_shape = None
+    # global projection
+    projection = None
 
     def __init__(self, file_path):
         self.file_path = file_path
@@ -30,13 +33,13 @@ class Image:
         max_x = min_x + (gdal_file.RasterXSize * x_res)
         min_y = max_y + (gdal_file.RasterYSize * y_res)
         # extent
-        #self.extent = [round(min_x, 5), round(max_y, 5), round(max_x, 5), round(min_y, 5)]
         self.extent = [min_x, max_y, max_x, min_y]
         # pixel sizes
         self.x_res = abs(float(x_res))
         self.y_res = abs(float(y_res))
         # projection
-        self.projection = gdal_file.GetProjectionRef()
+        if Image.projection is None:
+            Image.projection = gdal_file.GetProjectionRef()
         del gdal_file
 
     def set_bounds(self):
@@ -49,6 +52,7 @@ class Image:
 
     def get_metadata(self):
         # TODO
+        #self.landsat_version, self.sensor, self.path, self.row, self.date = parse_filename(self.file_path)
         print(parse_filename(self.file_path))
 
     def get_chunk(self, band, xoff, xsize, yoff, ysize):
@@ -83,7 +87,7 @@ class Image:
         chunk_matrix = np.full((yc_size, xc_size), np.nan)
 
         # check if the current chunk is outside of the image
-        if xc_min>=self.xi_max or xc_max<=self.xi_min or yc_min>=self.yi_max or yc_max<=self.yi_min:
+        if xc_min >= self.xi_max or xc_max <= self.xi_min or yc_min >= self.yi_max or yc_max <= self.yi_min:
             return chunk_matrix
         else:
             # set bounds for get the array chunk in image
