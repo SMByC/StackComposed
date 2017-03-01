@@ -20,6 +20,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import gc
 import warnings
 import gdal
 import numpy as np
@@ -143,6 +144,8 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
 
         # clean
         del driver, outRaster, outband, outRasterSRS, output_array
+        # force run garbage collector to release unreferenced memory
+        gc.collect()
 
     print("\nProcess completed!")
 
