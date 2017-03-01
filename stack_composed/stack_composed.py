@@ -142,7 +142,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
                                    Image.wrapper_extent[1], 0, -Image.wrapper_y_res))
 
         # clean
-        del outRaster
+        del driver, outRaster, outband, outRasterSRS, output_array
 
     print("\nProcess completed!")
 
