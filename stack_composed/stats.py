@@ -60,9 +60,14 @@ def statistic(stat, images, band, num_process, chunksize):
         xc_size = block.shape[1]
 
         # make stack reading all images only in specific chunk
-        stack_chunk = np.stack([image.get_chunk_in_wrapper(band, xc, xc_size, yc, yc_size)
-                                for image in images], axis=2)
+        chunks_list = [image.get_chunk_in_wrapper(band, xc, xc_size, yc, yc_size) for image in images]
+        chunks_list = np.array([i for i in chunks_list if i is not None])
 
+        if not chunks_list.size:
+            # all chunks are empty, return the chunk with nan
+            return np.full((yc_size, xc_size), np.nan)
+
+        stack_chunk = np.stack(chunks_list, axis=2)
         return stat_func(stack_chunk)
 
     # process

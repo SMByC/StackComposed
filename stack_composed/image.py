@@ -83,13 +83,14 @@ class Image:
         xc_max = xc+xc_size
         yc_min = yc
         yc_max = yc+yc_size
-        # initialize the chunk with a nan matrix
-        chunk_matrix = np.full((yc_size, xc_size), np.nan)
 
         # check if the current chunk is outside of the image
         if xc_min >= self.xi_max or xc_max <= self.xi_min or yc_min >= self.yi_max or yc_max <= self.yi_min:
-            return chunk_matrix
+            return None
         else:
+            # initialize the chunk with a nan matrix
+            chunk_matrix = np.full((yc_size, xc_size), np.nan)
+
             # set bounds for get the array chunk in image
             xoff = 0 if xc_min <= self.xi_min else xc_min - self.xi_min
             xsize = xc_max - self.xi_min if xc_min <= self.xi_min else self.xi_max - xc_min
