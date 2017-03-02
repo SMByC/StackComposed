@@ -24,6 +24,7 @@ epilog = \
 For more information visit:
 https://smbyc.bitbucket.io/md/stackcomposed
 
+StackComposed v{}
 Copyright (C) Xavier Corredor Llano <xcorredorl@ideam.gov.co>
 Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO
-General Public License - GPLv3'''
+General Public License - GPLv3'''.format(__version__)
