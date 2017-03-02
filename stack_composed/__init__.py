@@ -1,12 +1,12 @@
 
 
-__version__ = '17.2.21'  # year.month.day
+__version__ = '17.3.2'  # year.month.day
 
 
 header = \
 '''====================================================================
 
-StackComposed
+StackComposed v{}
 
   Compute and generate the composed of a raster images stack
 
@@ -17,7 +17,7 @@ Copyright (C) 2017 Xavier Corredor Llano
 Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO
 General Public License - GPLv3
 
-===================================================================='''
+===================================================================='''.format(__version__)
 
 epilog = \
 '''
