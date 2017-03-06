@@ -21,9 +21,16 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
 ```
 
 - `-stat` STAT
-    - statistic for compute the composed (required)
-    - options: median, mean, max, min, std, valid_pixels
-    - example: -stat mean
+    - statistic for compute the composed along the time axis ignoring any nans (required)
+    - statistics options:
+        - `median`: compute the median
+        - `mean`: compute the arithmetic mean
+        - `max`: compute the maximum value
+        - `min`: compute the minimum value
+        - `std`: compute the standard deviation
+        - `valid_pixels`: count the valid pixels
+        - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
+    - example: -stat median
 
 - `-bands` BANDS
     - band or bands to process (required)
