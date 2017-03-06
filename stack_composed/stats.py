@@ -51,6 +51,11 @@ def statistic(stat, images, band, num_process, chunksize):
     if stat == 'valid_pixels':
         def stat_func(stack_chunk):
             return stack_chunk.shape[2] - np.isnan(stack_chunk).sum(axis=2)
+    # Calculate the percentile NN
+    if stat.startswith('percentile_'):
+        p = int(stat.split('_')[1])
+        def stat_func(stack_chunk):
+            return np.nanpercentile(stack_chunk, p, axis=2)
 
     # calculate the statistical for the respective chunk
     def calc(block, block_id=None, chunksize=None):
