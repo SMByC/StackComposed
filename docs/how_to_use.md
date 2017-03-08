@@ -20,12 +20,12 @@ For the moment, the image formats support are: `tif` and `img`
 stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot dtype] inputs
 ```
 
-- `-stat` STAT
-    - statistic for compute the composed along the time axis ignoring any nans (required)
+- `-stat` STAT (required)
+    - statistic for compute the composed along the time axis ignoring any nans, this is, compute the statistic along the time series by pixel (see [about](about.md))
     - statistics options:
         - `median`: compute the median
         - `mean`: compute the arithmetic mean
-        - `gmean`: compute the geometric mean
+        - `gmean`: compute the geometric mean, that is the n-th root of (x1 * x2 * ... * xn)
         - `max`: compute the maximum value
         - `min`: compute the minimum value
         - `std`: compute the standard deviation
@@ -33,37 +33,37 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
         - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
     - example: -stat median
 
-- `-bands` BANDS
-    - band or bands to process (required)
+- `-bands` BANDS (required)
+    - band or bands to process
     - input: integer or integers comma separated
     - example: -bands 1,2,4
 
-- `-p` P
-    - number of process (optional)
+- `-p` P (optional)
+    - number of process
     - input: integer
     - by default: total cores - 1
     - example: -p 10
 
-- `-chunks` CHUNKS
-    - chunks size for parallel process (optional)
+- `-chunks` CHUNKS (optional)
+    - chunks size for parallel process
     - input: integer
     - by default: 1000
     - example: -chunks 800
 
-- `-o` OUTPUT
-    - output directory and/or filename for save results (optional)
+- `-o` OUTPUT (optional)
+    - output directory and/or filename for save results
     - input: string, absolute or relative path or filename
     - by default: save in the same directory of run with a standard name
     - example: -o /dir/to/file.tif
 
-- `-ot` DTYPE
-    - output data type for results (optional)
+- `-ot` DTYPE (optional)
+    - output data type for results
     - options: byte, uint16, uint32, int16, int32, float32, float64
     - example: -ot float64
 
-- `inputs`
-    - directories or images files to process (required)
-    - input: strings, absolute or relative directories or/and files
+- `inputs` (required)
+    - directories or images files to process
+    - input: filenames and/or absolute or relative directories
     - example: /dir1 /dir2 *.tif
 
 ### Chunks sizes
