@@ -23,41 +23,49 @@ def statistic(stat, images, band, num_process, chunksize):
     chunksize = wrapper_array.chunks[0][0]
 
     # call built in numpy statistical functions, with a specified axis. if
-    # axis=2 means it will calculate along the 'depth' axis, per pixel.
+    # axis=2 means it will Compute along the 'depth' axis, per pixel.
     # with the return being n by m, the shape of each band.
     #
-    # Calculate the median statistical
+    # Compute the median
     if stat == 'median':
         def stat_func(stack_chunk):
             return np.nanmedian(stack_chunk, axis=2)
-    # Calculate the mean statistical
+    # Compute the arithmetic mean
     if stat == 'mean':
         def stat_func(stack_chunk):
             return np.nanmean(stack_chunk, axis=2)
-    # Calculate the maximum statistical
+    # Compute the geometric mean
+    if stat == 'gmean':
+        def stat_func(stack_chunk):
+            product = np.nanprod(stack_chunk, axis=2)
+            count = np.count_nonzero(np.nan_to_num(stack_chunk), axis=2)
+            gmean = np.array([p ** (1.0 / c) for p, c in zip(product, count)])
+            gmean[gmean == 1] = np.nan
+            return gmean
+    # Compute the maximum value
     if stat == 'max':
         def stat_func(stack_chunk):
             return np.nanmax(stack_chunk, axis=2)
-    # Calculate the minimum statistical
+    # Compute the minimum value
     if stat == 'min':
         def stat_func(stack_chunk):
             return np.nanmin(stack_chunk, axis=2)
-    # Calculate the standard deviation statistical
+    # Compute the standard deviation
     if stat == 'std':
         def stat_func(stack_chunk):
             return np.nanstd(stack_chunk, axis=2)
-    # Calculate the valid pixels statistical
+    # Compute the valid pixels
     # this count the valid data (no nans) across the z-axis
     if stat == 'valid_pixels':
         def stat_func(stack_chunk):
             return stack_chunk.shape[2] - np.isnan(stack_chunk).sum(axis=2)
-    # Calculate the percentile NN
+    # Compute the percentile NN
     if stat.startswith('percentile_'):
         p = int(stat.split('_')[1])
         def stat_func(stack_chunk):
             return np.nanpercentile(stack_chunk, p, axis=2)
 
-    # calculate the statistical for the respective chunk
+    # Compute the statistical for the respective chunk
     def calc(block, block_id=None, chunksize=None):
         yc = block_id[0] * chunksize
         yc_size = block.shape[0]

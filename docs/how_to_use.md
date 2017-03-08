@@ -25,6 +25,7 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
     - statistics options:
         - `median`: compute the median
         - `mean`: compute the arithmetic mean
+        - `gmean`: compute the geometric mean
         - `max`: compute the maximum value
         - `min`: compute the minimum value
         - `std`: compute the standard deviation
