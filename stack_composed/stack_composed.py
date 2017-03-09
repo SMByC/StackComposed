@@ -95,6 +95,10 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # set bounds for all images
     [image.set_bounds() for image in images]
 
+    # for some statistics that required extra metadata
+    if stat in ["last_valid_pixel"]:
+        [image.set_metadata_from_filename() for image in images]
+
     # registered Dask progress bar
     pbar = ProgressBar()
     pbar.register()
