@@ -151,8 +151,11 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         # write bands
         outband = outRaster.GetRasterBand(nbands)
         outband.WriteArray(output_array)
-        # nodata value
-        outband.SetNoDataValue(np.nan)
+        # set nodata value depend of the output type
+        if gdal_output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32, gdal.GDT_Int16, gdal.GDT_Int32]:
+            outband.SetNoDataValue(0)
+        if gdal_output_type in [gdal.GDT_Float32, gdal.GDT_Float64]:
+            outband.SetNoDataValue(np.nan)
 
         # set projection and geotransform
         outRasterSRS = gdal.osr.SpatialReference()
