@@ -83,7 +83,7 @@ def statistic(stat, images, band, num_process, chunksize):
                     return pixel_time_series[index]
 
         def stat_func(stack_chunk, metadata):
-            index_sort = np.flip(np.argsort(metadata['date']), axis=0)  # from the most recent to the oldest
+            index_sort = np.argsort(metadata['date'])[::-1]  # from the most recent to the oldest
             return np.apply_along_axis(last_pixel, 2, stack_chunk, index_sort)
 
     # Compute the julian day of the last valid pixel
@@ -96,7 +96,7 @@ def statistic(stat, images, band, num_process, chunksize):
                     return jdays[index]
 
         def stat_func(stack_chunk, metadata):
-            index_sort = np.flip(np.argsort(metadata['date']), axis=0)  # from the most recent to the oldest
+            index_sort = np.argsort(metadata['date'])[::-1]  # from the most recent to the oldest
             return np.apply_along_axis(jday_last_pixel, 2, stack_chunk, index_sort, metadata['jday'])
 
     # Compute the statistical for the respective chunk
