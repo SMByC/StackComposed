@@ -90,7 +90,7 @@ def statistic(stat, images, band, num_process, chunksize):
     if stat == 'jday_last_pixel':
         def jday_last_pixel(pixel_time_series, index_sort, jdays):
             if np.isnan(pixel_time_series).all():
-                return np.nan
+                return 0  # better np.nan but there is bug with multiprocessing with return nan value here
             for index in index_sort:
                 if not np.isnan(pixel_time_series[index]):
                     return jdays[index]
