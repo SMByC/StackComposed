@@ -51,7 +51,7 @@ class Image:
         self.yi_max = round(Image.wrapper_shape[0] - (self.extent[3] - Image.wrapper_extent[3]) / Image.wrapper_y_res)
 
     def set_metadata_from_filename(self):
-        self.landsat_version, self.sensor, self.path, self.row, self.date = parse_filename(self.file_path)
+        self.landsat_version, self.sensor, self.path, self.row, self.date, self.jday = parse_filename(self.file_path)
 
     def get_chunk(self, band, xoff, xsize, yoff, ysize):
         """

@@ -42,7 +42,7 @@ def parse_filename(file_path):
         year = int(filename[9:13])
         jday = int(filename[13:16])
         date = calc_date(year, jday)
-        return landsat_version, sensor, path, row, date
+        return landsat_version, sensor, path, row, date, jday
     except:
         pass
 
@@ -54,9 +54,10 @@ def parse_filename(file_path):
         path = int(filename.split("_")[1])
         row = int(filename.split("_")[2])
         date = datetime.datetime.strptime(filename.split("_")[3], "%y%m%d").date()
+        jday = date.timetuple().tm_yday
         landsat_version = int(filename.split("_")[4][0])
         sensor = filename.split("_")[4][1::]
-        return landsat_version, sensor, path, row, date
+        return landsat_version, sensor, path, row, date, jday
     except:
         pass
 
