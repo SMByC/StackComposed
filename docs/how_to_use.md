@@ -30,7 +30,7 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
         - `min`: compute the minimum value
         - `std`: compute the standard deviation
         - `valid_pixels`: count the valid pixels
-        - `last_valid_pixel`: the last valid pixel base on the date of the raster image (parse from filename)
+        - `last_pixel`: the last valid pixel base on the date of the raster image (parse from filename)
         - `jday_last_pixel`: the julian day of the last valid pixel base on the date of the raster image (parse from filename)
         - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
     - example: -stat median

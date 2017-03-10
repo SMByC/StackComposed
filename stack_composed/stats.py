@@ -74,8 +74,8 @@ def statistic(stat, images, band, num_process, chunksize):
             return np.nanpercentile(stack_chunk, p, axis=2)
 
     # Compute the last valid pixel
-    if stat == 'last_valid_pixel':
-        def last_valid_pixel(pixel_time_series, index_sort):
+    if stat == 'last_pixel':
+        def last_pixel(pixel_time_series, index_sort):
             if np.isnan(pixel_time_series).all():
                 return np.nan
             for index in index_sort:
@@ -84,7 +84,7 @@ def statistic(stat, images, band, num_process, chunksize):
 
         def stat_func(stack_chunk, metadata):
             index_sort = np.flip(np.argsort(metadata['date']), axis=0)  # from the most recent to the oldest
-            return np.apply_along_axis(last_valid_pixel, 2, stack_chunk, index_sort)
+            return np.apply_along_axis(last_pixel, 2, stack_chunk, index_sort)
 
     # Compute the julian day of the last valid pixel
     if stat == 'jday_last_pixel':
@@ -118,7 +118,7 @@ def statistic(stat, images, band, num_process, chunksize):
 
         # for some statistics that required extra metadata
         metadata = {}
-        if stat in ["last_valid_pixel", "jday_last_pixel"]:
+        if stat in ["last_pixel", "jday_last_pixel"]:
             metadata["date"] = np.array([image.date for image in images])[mask_none]
         if stat in ["jday_last_pixel"]:
             metadata["jday"] = np.array([image.jday for image in images])[mask_none]

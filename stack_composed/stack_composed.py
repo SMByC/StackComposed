@@ -39,10 +39,10 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     print(header)
 
     # check statistical option
-    if stat not in ('median', 'mean', 'gmean', 'max', 'min', 'std', 'valid_pixels', 'last_valid_pixel',
+    if stat not in ('median', 'mean', 'gmean', 'max', 'min', 'std', 'valid_pixels', 'last_pixel',
                     'jday_last_pixel') and not stat.startswith('percentile_'):
         print("\nError: argument '-stat' invalid choice: {}".format(stat))
-        print("choose from: median, mean, gmean, max, min, std, valid_pixels, last_valid_pixel, "
+        print("choose from: median, mean, gmean, max, min, std, valid_pixels, last_pixel, "
               "jday_last_pixel, percentile_NN")
         return
     if stat.startswith('percentile_'):
@@ -97,7 +97,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     [image.set_bounds() for image in images]
 
     # for some statistics that required extra metadata
-    if stat in ["last_valid_pixel", "jday_last_pixel"]:
+    if stat in ["last_pixel", "jday_last_pixel"]:
         [image.set_metadata_from_filename() for image in images]
 
     # registered Dask progress bar
@@ -125,7 +125,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         ### save result ###
         # choose the default data type based on the statistic
         if output_type is None:
-            if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_valid_pixel', 'jday_last_pixel'] or stat.startswith('percentile_'):
+            if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel'] or stat.startswith('percentile_'):
                 gdal_output_type = gdal.GDT_UInt16
             if stat in ['std', 'snr']:
                 gdal_output_type = gdal.GDT_Float32
