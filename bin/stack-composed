@@ -18,9 +18,8 @@ from stack_composed import stack_composed, epilog
 
 
 def script():
-    """Execute qc4sd if run as a script.
-
-        $ python3 stack-composed ...
+    """
+    Run as a script with arguments
     """
 
     # Create parser arguments
