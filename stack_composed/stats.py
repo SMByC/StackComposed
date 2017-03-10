@@ -86,6 +86,19 @@ def statistic(stat, images, band, num_process, chunksize):
             index_sort = np.flip(np.argsort(metadata['date']), axis=0)  # from the most recent to the oldest
             return np.apply_along_axis(last_valid_pixel, 2, stack_chunk, index_sort)
 
+    # Compute the julian day of the last valid pixel
+    if stat == 'jday_last_pixel':
+        def jday_last_pixel(pixel_time_series, index_sort, jdays):
+            if np.isnan(pixel_time_series).all():
+                return np.nan
+            for index in index_sort:
+                if not np.isnan(pixel_time_series[index]):
+                    return jdays[index]
+
+        def stat_func(stack_chunk, metadata):
+            index_sort = np.flip(np.argsort(metadata['date']), axis=0)  # from the most recent to the oldest
+            return np.apply_along_axis(jday_last_pixel, 2, stack_chunk, index_sort, metadata['jday'])
+
     # Compute the statistical for the respective chunk
     def calc(block, block_id=None, chunksize=None):
         yc = block_id[0] * chunksize
@@ -105,8 +118,10 @@ def statistic(stat, images, band, num_process, chunksize):
 
         # for some statistics that required extra metadata
         metadata = {}
-        if stat in ["last_valid_pixel"]:
+        if stat in ["last_valid_pixel", "jday_last_pixel"]:
             metadata["date"] = np.array([image.date for image in images])[mask_none]
+        if stat in ["jday_last_pixel"]:
+            metadata["jday"] = np.array([image.jday for image in images])[mask_none]
 
         stack_chunk = np.stack(chunks_list, axis=2)
         return stat_func(stack_chunk, metadata)
