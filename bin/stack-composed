@@ -43,9 +43,9 @@ def script():
     parser.add_argument('-chunks', type=int, default=1000,
                         help='chunks size for parallel process', required=False)
     parser.add_argument('-start', type=valid_date, dest='start_date',
-                        help='Initial date for composed format YYYY-MM-DD', required=False)
+                        help='Initial date for filter data, format YYYY-MM-DD', required=False)
     parser.add_argument('-end', type=valid_date, dest='end_date',
-                        help='End date for composed format YYYY-MM-DD', required=False)
+                        help='End date for filter data, format YYYY-MM-DD', required=False)
     parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
                         default=os.getcwd())
     parser.add_argument('-ot', type=str, dest='output_type', help='output data type for results', required=False,

@@ -30,8 +30,8 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
         - `min`: compute the minimum value
         - `std`: compute the standard deviation
         - `valid_pixels`: count the valid pixels
-        - `last_pixel`: the last valid pixel base on the date of the raster image (parse from filename)
-        - `jday_last_pixel`: the julian day of the last valid pixel base on the date of the raster image (parse from filename)
+        - `last_pixel`: the last valid pixel base on the date of the raster image, required extra metadata [\[2\]](#2)
+        - `jday_last_pixel`: the julian day of the last valid pixel base on the date of the raster image, required extra metadata [\[2\]](#2)
         - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
     - example: -stat median
 
@@ -47,7 +47,7 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
     - example: -p 10
 
 - `-chunks` CHUNKS (optional)
-    - chunks size for parallel process
+    - chunks size for parallel process [\[1\]](#1)
     - input: integer
     - by default: 1000
     - example: -chunks 800
@@ -63,12 +63,22 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot 
     - options: byte, uint16, uint32, int16, int32, float32, float64
     - example: -ot float64
 
+- `-start` DATE (optional)
+    - filter the images with the start date DATE, can be used alone or in combination with -end argument, required extra metadata [\[2\]](#2)
+    - format: YYYY-MM-DD
+    - example: -start 2016-06-01
+
+- `-end` DATE (optional)
+    - filter the images with the end date DATE, can be used alone or in combination with -start argument, required extra metadata [\[2\]](#2)
+    - format: YYYY-MM-DD
+    - example: -end 2016-12-31
+
 - `inputs` (required)
     - directories or images files to process
     - input: filenames and/or absolute or relative directories
     - example: /dir1 /dir2 *.tif
 
-### Chunks sizes
+### \[1\] Chunks sizes<a name="1"></a>
 
 Choosing good values for chunks can strongly impact performance. StackComposed only required a ram memory enough only for the sizes and the number of chunks that are currently being processed in parallel, therefore the chunks sizes going together with the number of process. Here are some general guidelines. The strongest guide is memory:
 
@@ -78,3 +88,14 @@ Choosing good values for chunks can strongly impact performance. StackComposed o
 
 - The size of the blocks should be large enough to hide scheduling overhead, which is a couple of milliseconds per task
 
+### \[2\] Extra metadata<a name="2"></a>
+
+Some statistics or arguments required extra information for each image to process. The StackComposed acquires this extra metadata using parsing of the filename. Currently support two format:
+
+* **Official Landsat filenames:**
+    * Example: LE70080532002152EDC00...tif
+
+* **SMByC format:**
+    * Example: Landsat_8_53_020601_7ETM...tif
+
+For them extract: landsat version, sensor, path, row, date and julian day.

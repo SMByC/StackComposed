@@ -75,6 +75,14 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
 
+    # filter images based on the start date and/or end date, required extra metadata
+    if start_date is not None or end_date is not None:
+        [image.set_metadata_from_filename() for image in images]
+        if start_date is not None:
+            images = [image for image in images if image.date >= start_date]
+        if end_date is not None:
+            images = [image for image in images if image.date <= end_date]
+
     # get wrapper extent
     min_x = min([image.extent[0] for image in images])
     max_y = max([image.extent[1] for image in images])
