@@ -40,17 +40,25 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
 
     # check statistical option
     if stat not in ('median', 'mean', 'gmean', 'max', 'min', 'std', 'valid_pixels', 'last_pixel',
-                    'jday_last_pixel') and not stat.startswith('percentile_'):
+                    'jday_last_pixel') and not stat.startswith(('percentile_', 'trim_mean_')):
         print("\nError: argument '-stat' invalid choice: {}".format(stat))
         print("choose from: median, mean, gmean, max, min, std, valid_pixels, last_pixel, "
-              "jday_last_pixel, percentile_NN")
+              "jday_last_pixel, percentile_NN, trim_mean_LL_UL")
         return
     if stat.startswith('percentile_'):
         try:
             int(stat.split('_')[1])
         except:
             print("\nError: argument '-stat' invalid choice: {}".format(stat))
-            print("the percentile ends with a valid number, like: percentile_25")
+            print("the percentile must ends with a valid number, e.g. percentile_25")
+            return
+    if stat.startswith('trim_mean_'):
+        try:
+            int(stat.split('_')[2])
+            int(stat.split('_')[3])
+        except:
+            print("\nError: argument '-stat' invalid choice: {}".format(stat))
+            print("the trim_mean_LL_UL must ends with a valid limits, e.g. trim_mean_10_80")
             return
 
     print("\nLoading images in path(s) and calculating the wrapper extent:")
@@ -133,7 +141,8 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         ### save result ###
         # choose the default data type based on the statistic
         if output_type is None:
-            if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel'] or stat.startswith('percentile_'):
+            if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel'] or \
+                    stat.startswith(('percentile_', 'trim_mean_')):
                 gdal_output_type = gdal.GDT_UInt16
             if stat in ['std', 'snr']:
                 gdal_output_type = gdal.GDT_Float32

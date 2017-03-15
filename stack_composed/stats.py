@@ -99,6 +99,22 @@ def statistic(stat, images, band, num_process, chunksize):
             index_sort = np.argsort(metadata['date'])[::-1]  # from the most recent to the oldest
             return np.apply_along_axis(jday_last_pixel, 2, stack_chunk, index_sort, metadata['jday'])
 
+    # Compute the trimmed median with lower limit and upper limit
+    if stat.startswith('trim_mean_'):
+        # TODO: check this stats when the time series have few data
+        lower = int(stat.split('_')[2])
+        upper = int(stat.split('_')[3])
+        def trim_mean(pixel_time_series):
+            if np.isnan(pixel_time_series).all():
+                return 0  # better np.nan but there is bug with multiprocessing with return nan value here
+            pts = pixel_time_series[~np.isnan(pixel_time_series)]
+            if len(pts) <= 2:
+                return np.percentile(pts, (lower+upper)/2)
+            return np.mean(pts[(pts >= np.percentile(pts, lower)) & (pts <= np.percentile(pts, upper))])
+
+        def stat_func(stack_chunk, metadata):
+            return np.apply_along_axis(trim_mean, 2, stack_chunk)
+
     # Compute the statistical for the respective chunk
     def calc(block, block_id=None, chunksize=None):
         yc = block_id[0] * chunksize
