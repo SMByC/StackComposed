@@ -17,7 +17,7 @@ For the moment, the image formats support are: `tif` and `img`
 `StackComposed` takes some command-line options:
 
 ```bash
-stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-o OUTPUT] [-ot dtype] inputs
+stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-end DATE] [-o OUTPUT] [-ot dtype] inputs
 ```
 
 - `-stat` STAT (required)
