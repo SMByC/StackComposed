@@ -40,10 +40,10 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
 
     # check statistical option
     if stat not in ('median', 'mean', 'gmean', 'max', 'min', 'std', 'valid_pixels', 'last_pixel',
-                    'jday_last_pixel') and not stat.startswith(('percentile_', 'trim_mean_')):
+                    'jday_last_pixel', 'linear_trend') and not stat.startswith(('percentile_', 'trim_mean_')):
         print("\nError: argument '-stat' invalid choice: {}".format(stat))
         print("choose from: median, mean, gmean, max, min, std, valid_pixels, last_pixel, "
-              "jday_last_pixel, percentile_NN, trim_mean_LL_UL")
+              "jday_last_pixel, linear_trend, percentile_NN, trim_mean_LL_UL")
         return
     if stat.startswith('percentile_'):
         try:
@@ -113,7 +113,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     [image.set_bounds() for image in images]
 
     # for some statistics that required extra metadata
-    if stat in ["last_pixel", "jday_last_pixel"]:
+    if stat in ["last_pixel", "jday_last_pixel", "linear_trend"]:
         [image.set_metadata_from_filename() for image in images]
 
     # registered Dask progress bar
@@ -151,6 +151,8 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
                     gdal_output_type = gdal.GDT_Byte
                 else:
                     gdal_output_type = gdal.GDT_UInt16
+            if stat in ['linear_trend']:
+                gdal_output_type = gdal.GDT_Int16
         else:
             if output_type == 'byte': gdal_output_type = gdal.GDT_Byte
             if output_type == 'uint16': gdal_output_type = gdal.GDT_UInt16
@@ -164,15 +166,20 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         nbands = 1
         outRaster = driver.Create(output_filename, Image.wrapper_shape[1], Image.wrapper_shape[0],
                                   nbands, gdal_output_type)
-
-        # write bands
         outband = outRaster.GetRasterBand(nbands)
+
+        # convert nan value and set nodata value special by statistic
+        if stat in ['linear_trend']:
+            output_array[np.isnan(output_array)] = -9999
+            outband.SetNoDataValue(-9999)
+        else:  # set nodata value depend of the output type
+            if gdal_output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32, gdal.GDT_Int16, gdal.GDT_Int32]:
+                outband.SetNoDataValue(0)
+            if gdal_output_type in [gdal.GDT_Float32, gdal.GDT_Float64]:
+                outband.SetNoDataValue(np.nan)
+
+        # write band
         outband.WriteArray(output_array)
-        # set nodata value depend of the output type
-        if gdal_output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32, gdal.GDT_Int16, gdal.GDT_Int32]:
-            outband.SetNoDataValue(0)
-        if gdal_output_type in [gdal.GDT_Float32, gdal.GDT_Float64]:
-            outband.SetNoDataValue(np.nan)
 
         # set projection and geotransform
         outRasterSRS = gdal.osr.SpatialReference()

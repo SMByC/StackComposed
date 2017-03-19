@@ -115,6 +115,25 @@ def statistic(stat, images, band, num_process, chunksize):
         def stat_func(stack_chunk, metadata):
             return np.apply_along_axis(trim_mean, 2, stack_chunk)
 
+    # Compute the linear trend using least-squares method
+    if stat == 'linear_trend':
+        def linear_trend(pixel_time_series, index_sort, date_list):
+            if np.isnan(pixel_time_series).all() or len(pixel_time_series[~np.isnan(pixel_time_series)]) == 1:
+                return np.nan
+            # Unix timestamp in days
+            x = [int(int(date_list[index].strftime("%s")) / 86400) for index in index_sort]
+            x = [i-x[0] for i in x]  # diff from minimum
+            pts = np.array([pixel_time_series[index] for index in index_sort])
+            y = np.ma.array(pts, mask=np.isnan(pts))
+
+            ssxm, ssxym, ssyxm, ssym = np.ma.cov(x, y, bias=1).flat
+            slope = ssxym / ssxm
+            return slope*10 if not np.isnan(slope) else np.nan
+
+        def stat_func(stack_chunk, metadata):
+            index_sort = np.argsort(metadata['date'])  # from the oldest to most recent
+            return np.apply_along_axis(linear_trend, 2, stack_chunk, index_sort, metadata['date'])
+
     # Compute the statistical for the respective chunk
     def calc(block, block_id=None, chunksize=None):
         yc = block_id[0] * chunksize
@@ -134,7 +153,7 @@ def statistic(stat, images, band, num_process, chunksize):
 
         # for some statistics that required extra metadata
         metadata = {}
-        if stat in ["last_pixel", "jday_last_pixel"]:
+        if stat in ["last_pixel", "jday_last_pixel", "linear_trend"]:
             metadata["date"] = np.array([image.date for image in images])[mask_none]
         if stat in ["jday_last_pixel"]:
             metadata["jday"] = np.array([image.jday for image in images])[mask_none]
