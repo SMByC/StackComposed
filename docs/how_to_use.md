@@ -41,6 +41,8 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
 
         - `jday_last_pixel`: the julian day of the last valid pixel base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
 
+        - `jday_median`: the julian day of the median value base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+
         - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
 
         - `trim_mean_LL_UL`: compute the truncated mean, first clean the time pixels series below to percentile LL (lower limit) and above the percentile UL (upper limit) then compute the mean, e.g. trim_mean_25_80. This statistic is not good for few time series data

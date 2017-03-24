@@ -40,10 +40,10 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
 
     # check statistical option
     if stat not in ('median', 'mean', 'gmean', 'max', 'min', 'std', 'valid_pixels', 'last_pixel',
-                    'jday_last_pixel', 'linear_trend') and not stat.startswith(('percentile_', 'trim_mean_')):
+                    'jday_last_pixel', 'jday_median', 'linear_trend') and not stat.startswith(('percentile_', 'trim_mean_')):
         print("\nError: argument '-stat' invalid choice: {}".format(stat))
         print("choose from: median, mean, gmean, max, min, std, valid_pixels, last_pixel, "
-              "jday_last_pixel, linear_trend, percentile_NN, trim_mean_LL_UL")
+              "jday_last_pixel, jday_median, linear_trend, percentile_NN, trim_mean_LL_UL")
         return
     if stat.startswith('percentile_'):
         try:
@@ -113,7 +113,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     [image.set_bounds() for image in images]
 
     # for some statistics that required extra metadata
-    if stat in ["last_pixel", "jday_last_pixel", "linear_trend"]:
+    if stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
         [image.set_metadata_from_filename() for image in images]
 
     # registered Dask progress bar
@@ -141,8 +141,8 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         ### save result ###
         # choose the default data type based on the statistic
         if output_type is None:
-            if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel'] or \
-                    stat.startswith(('percentile_', 'trim_mean_')):
+            if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel',
+                        'jday_median'] or stat.startswith(('percentile_', 'trim_mean_')):
                 gdal_output_type = gdal.GDT_UInt16
             if stat in ['std', 'snr']:
                 gdal_output_type = gdal.GDT_Float32

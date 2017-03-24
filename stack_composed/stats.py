@@ -99,6 +99,18 @@ def statistic(stat, images, band, num_process, chunksize):
             index_sort = np.argsort(metadata['date'])[::-1]  # from the most recent to the oldest
             return np.apply_along_axis(jday_last_pixel, 2, stack_chunk, index_sort, metadata['jday'])
 
+    # Compute the julian day of the median value
+    if stat == 'jday_median':
+        def jday_median(pixel_time_series, index_sort, jdays):
+            if np.isnan(pixel_time_series).all():
+                return 0  # better np.nan but there is bug with multiprocessing with return nan value here
+            jdays = [jdays[index] for index in index_sort if not np.isnan(pixel_time_series[index])]
+            return np.ceil(np.median(jdays))
+
+        def stat_func(stack_chunk, metadata):
+            index_sort = np.argsort(metadata['date'])  # from the oldest to most recent
+            return np.apply_along_axis(jday_median, 2, stack_chunk, index_sort, metadata['jday'])
+
     # Compute the trimmed median with lower limit and upper limit
     if stat.startswith('trim_mean_'):
         # TODO: check this stats when the time series have few data
@@ -153,9 +165,9 @@ def statistic(stat, images, band, num_process, chunksize):
 
         # for some statistics that required extra metadata
         metadata = {}
-        if stat in ["last_pixel", "jday_last_pixel", "linear_trend"]:
+        if stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
             metadata["date"] = np.array([image.date for image in images])[mask_none]
-        if stat in ["jday_last_pixel"]:
+        if stat in ["jday_last_pixel", "jday_median"]:
             metadata["jday"] = np.array([image.jday for image in images])[mask_none]
 
         stack_chunk = np.stack(chunks_list, axis=2)
