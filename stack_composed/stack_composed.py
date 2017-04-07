@@ -104,10 +104,15 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     Image.wrapper_shape = (int((max_y-min_y)/Image.wrapper_y_res), int((max_x-min_x)/Image.wrapper_x_res))  # (y,x)
 
     # some information about process
-    print("  images to process: {0}".format(len(images_files)))
+    if len(images_files) != len(images):
+        print("  images loaded: {0}".format(len(images_files)))
+        print("  images to process: {0} (filtered in the range dates)".format(len(images)))
+    else:
+        print("  images to process: {0}".format(len(images)))
     print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
     print("  pixels size: {0} x {1}".format(round(Image.wrapper_x_res, 1), round(Image.wrapper_y_res, 1)))
     print("  wrapper size: {0} x {1} pixels".format(Image.wrapper_shape[1], Image.wrapper_shape[0]))
+    print("  running in {0} cores with chunks size {1}".format(num_process, chunksize))
 
     # set bounds for all images
     [image.set_bounds() for image in images]
