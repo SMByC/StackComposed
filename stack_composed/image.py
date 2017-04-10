@@ -41,6 +41,8 @@ class Image:
         if Image.projection is None:
             Image.projection = gdal_file.GetProjectionRef()
         del gdal_file
+        # output type
+        self.output_type = None
 
     def set_bounds(self):
         # bounds for image with respect to wrapper
@@ -65,8 +67,12 @@ class Image:
         no_data_value = gdal_file.GetRasterBand(band).GetNoDataValue()
         if no_data_value is not None:
             raster_band[raster_band == no_data_value] = np.nan
-        # convert the values <= 0 to NaN
-        raster_band[raster_band <= 0] = np.nan
+        if self.output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32]:
+            # convert the negative values and zero only for unsigned output
+            raster_band[raster_band <= 0] = np.nan
+        else:
+            # convert the zero values to NaN
+            raster_band[raster_band == 0] = np.nan
         del gdal_file
 
         return raster_band

@@ -138,12 +138,6 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
                   "       filename: {}\n".format(output))
             exit(1)
 
-        ### process ###
-        # Calculate the statistics
-        print("\nProcessing the {} for band {}:".format(stat, band))
-        output_array = statistic(stat, images, band, num_process, chunksize)
-
-        ### save result ###
         # choose the default data type based on the statistic
         if output_type is None:
             if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel',
@@ -166,6 +160,15 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
             if output_type == 'int32': gdal_output_type = gdal.GDT_Int32
             if output_type == 'float32': gdal_output_type = gdal.GDT_Float32
             if output_type == 'float64': gdal_output_type = gdal.GDT_Float64
+        for image in images:
+            image.output_type = gdal_output_type
+
+        ### process ###
+        # Calculate the statistics
+        print("\nProcessing the {} for band {}:".format(stat, band))
+        output_array = statistic(stat, images, band, num_process, chunksize)
+
+        ### save result ###
         # create output raster
         driver = gdal.GetDriverByName('GTiff')
         nbands = 1
