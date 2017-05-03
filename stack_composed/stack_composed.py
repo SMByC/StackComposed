@@ -114,6 +114,23 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     print("  wrapper size: {0} x {1} pixels".format(Image.wrapper_shape[1], Image.wrapper_shape[0]))
     print("  running in {0} cores with chunks size {1}".format(num_process, chunksize))
 
+    # check
+    print("  checking bands and pixel size: ", flush=True, end="")
+    for image in images:
+        for band in bands:
+            if band > image.n_bands:
+                print("\n\nError: the image '{0}' don't have the band {1} needed to process\n"
+                      .format(image.file_path, band))
+                exit(1)
+        if round(image.x_res, 1) != round(Image.wrapper_x_res, 1) or \
+           round(image.y_res, 1) != round(Image.wrapper_y_res, 1):
+            print("\n\nError: the image '{}' don't have the same pixel size to the base image: {}x{} vs {}x{}."
+                  " The stack-composed is not enabled for process yet images with different pixel size.\n"
+                  .format(image.file_path, round(image.x_res, 1), round(image.y_res, 1),
+                          round(Image.wrapper_x_res, 1), round(Image.wrapper_x_res, 1)))
+            exit(1)
+    print("ok")
+
     # set bounds for all images
     [image.set_bounds() for image in images]
 

@@ -37,6 +37,8 @@ class Image:
         # pixel sizes
         self.x_res = abs(float(x_res))
         self.y_res = abs(float(y_res))
+        # number of bands
+        self.n_bands = gdal_file.RasterCount
         # projection
         if Image.projection is None:
             Image.projection = gdal_file.GetProjectionRef()
