@@ -61,7 +61,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
             print("the trim_mean_LL_UL must ends with a valid limits, e.g. trim_mean_10_80")
             return
 
-    print("\nLoading images in path(s) and calculating the wrapper extent:")
+    print("\nLoading and prepare images in path(s):", flush=True)
     # search all Image files in inputs recursively if the files are in directories
     images_files = []
     for _input in inputs:
