@@ -20,7 +20,7 @@ pip install stack-composed
 To install StackComposed from source, clone the repository from Bitbucket
 
 ```bash
-hg clone https://bitbucket.org/SMBYC/stackcomposed
+hg clone https://bitbucket.org/smbyc/stackcomposed
 cd stackcomposed
 python setup.py install
 # or

@@ -10,14 +10,14 @@ The StackComposed compute the stack composed of a specific statistic of band val
 ## Source code
 
 The latest sources can be obtained from official repository:
-[https://bitbucket.org/SMBYC/stackcomposed](https://bitbucket.org/SMBYC/stackcomposed)
+[https://bitbucket.org/smbyc/stackcomposed](https://bitbucket.org/smbyc/stackcomposed)
 
 ## Issue Tracker
 
-Issues, bugs and enhancement: [https://bitbucket.org/SMBYC/stackcomposed/issues](https://bitbucket.org/SMBYC/stackcomposed/issues)
+Issues, ideas and enhancements: [https://bitbucket.org/smbyc/stackcomposed/issues](https://bitbucket.org/smbyc/stackcomposed/issues)
 
 ***
 
 Copyright (C) Xavier Corredor Llano <xcorredorl@ideam.gov.co>  
-Sistema de Monitoreo de Bosques y Carbono - SMBYC and FAO  
+Sistema de Monitoreo de Bosques y Carbono SMByC and FAO  
 General Public License - GPLv3

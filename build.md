@@ -6,7 +6,7 @@ Warning, this will remove all the changes and update to the latest head
 
 ## Build a documentation
 
-    mkdocs build --clean --site-dir /home/xavier/Projects/SMBYC/smbyc.bitbucket.org/stackcomposed/
+    mkdocs build --clean --site-dir /home/xavier/Projects/smbyc/smbyc.bitbucket.org/stackcomposed/
 
 ## Build and Upload:
 

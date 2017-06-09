@@ -10,12 +10,12 @@ cd $STACKCOMPOSED_DIR
 if [ ! -d ${STACKCOMPOSED_DIR}/.hg ]; then
     cd ..
     rm -rf ${STACKCOMPOSED_DIR}
-    hg clone https://bitbucket.org/SMBYC/stackcomposed StackComposed
+    hg clone https://bitbucket.org/smbyc/stackcomposed StackComposed
     cd $STACKCOMPOSED_DIR
 fi
 
 # synchronize changes with repository, update and clean
-hg pull https://bitbucket.org/SMBYC/stackcomposed
+hg pull https://bitbucket.org/smbyc/stackcomposed
 hg update -C
 hg status -un|xargs rm 2> /dev/null
 
