@@ -9,8 +9,8 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-import gdal
 import numpy as np
+from osgeo import gdal
 
 from stack_composed.parse import parse_filename
 

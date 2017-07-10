@@ -22,8 +22,8 @@
 import os
 import gc
 import warnings
-import gdal
 import numpy as np
+from osgeo import gdal, osr
 from dask.diagnostics import ProgressBar
 
 from stack_composed import header
@@ -207,7 +207,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         outband.WriteArray(output_array)
 
         # set projection and geotransform
-        outRasterSRS = gdal.osr.SpatialReference()
+        outRasterSRS = osr.SpatialReference()
         outRasterSRS.ImportFromWkt(Image.projection)
         outRaster.SetProjection(outRasterSRS.ExportToWkt())
         outRaster.SetGeoTransform((Image.wrapper_extent[0], Image.wrapper_x_res, 0,
