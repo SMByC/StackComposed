@@ -12,7 +12,7 @@ The StackComposed use the following apps/libraries:
 You can install from PyPi repository:
 
 ```bash
-pip install stack-composed
+pip3 install stack-composed
 ```
 
 ## From source code
@@ -22,7 +22,7 @@ To install StackComposed from source, clone the repository from Bitbucket
 ```bash
 hg clone https://bitbucket.org/smbyc/stackcomposed
 cd stackcomposed
-python setup.py install
+python3 setup.py install
 # or
-pip install -e .
+pip3 install -e .
 ```
