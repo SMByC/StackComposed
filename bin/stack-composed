@@ -9,10 +9,15 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-import os
+import os, sys
 import argparse
 from datetime import datetime
 from multiprocessing import cpu_count
+
+# add project dir to pythonpath
+project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+if project_dir not in sys.path:
+    sys.path.append(project_dir)
 
 from stack_composed import stack_composed, epilog
 
