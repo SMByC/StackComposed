@@ -30,7 +30,7 @@ from stack_composed import header
 from stack_composed.image import Image
 from stack_composed.stats import statistic
 
-IMAGES_TYPES = ('.tif', '.TIF', 'img', 'IMG')
+IMAGES_TYPES = ('.tif', '.TIF', '.img', '.IMG', '.hdr', '.HDR')
 
 
 def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_date=None, end_date=None):

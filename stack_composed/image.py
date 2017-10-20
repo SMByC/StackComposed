@@ -9,6 +9,7 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
+import os
 import numpy as np
 from osgeo import gdal
 
@@ -25,7 +26,7 @@ class Image:
     projection = None
 
     def __init__(self, file_path):
-        self.file_path = file_path
+        self.file_path = self.get_dataset_path(file_path)
         ### set geoproperties ###
         # setting the extent, pixel sizes and projection
         gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
@@ -45,6 +46,19 @@ class Image:
         del gdal_file
         # output type
         self.output_type = None
+
+    @staticmethod
+    def get_dataset_path(file_path):
+        path, ext = os.path.splitext(file_path)
+        if ext.lower() == ".hdr":
+            # search the dataset for ENVI files
+            dataset_exts = ['.dat', '.raw', '.sli', '.hyspex', '.img']
+            for test_ext in [''] + dataset_exts + [i.upper() for i in dataset_exts]:
+                test_dataset_path = os.path.join(path, test_ext)
+                if os.path.isfile(test_dataset_path):
+                    return test_dataset_path
+        else:
+            return file_path
 
     def set_bounds(self):
         # bounds for image with respect to wrapper
