@@ -54,7 +54,7 @@ class Image:
             # search the dataset for ENVI files
             dataset_exts = ['.dat', '.raw', '.sli', '.hyspex', '.img']
             for test_ext in [''] + dataset_exts + [i.upper() for i in dataset_exts]:
-                test_dataset_path = os.path.join(path, test_ext)
+                test_dataset_path = path + test_ext
                 if os.path.isfile(test_dataset_path):
                     return test_dataset_path
         else:
