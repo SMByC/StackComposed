@@ -195,8 +195,8 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
 
         # convert nan value and set nodata value special by statistic
         if stat in ['linear_trend']:
-            output_array[np.isnan(output_array)] = -9999
-            outband.SetNoDataValue(-9999)
+            output_array[np.isnan(output_array)] = -32768
+            outband.SetNoDataValue(-32768)
         else:  # set nodata value depend of the output type
             if gdal_output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32, gdal.GDT_Int16, gdal.GDT_Int32]:
                 outband.SetNoDataValue(0)

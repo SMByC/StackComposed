@@ -140,7 +140,7 @@ def statistic(stat, images, band, num_process, chunksize):
 
             ssxm, ssxym, ssyxm, ssym = np.ma.cov(x, y, bias=1).flat
             slope = ssxym / ssxm
-            return slope*10 if not np.isnan(slope) else np.nan
+            return slope*1000 if not np.isnan(slope) else np.nan
 
         def stat_func(stack_chunk, metadata):
             index_sort = np.argsort(metadata['date'])  # from the oldest to most recent

@@ -47,7 +47,7 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
 
         - `trim_mean_LL_UL`: compute the truncated mean, first clean the time pixels series below to percentile LL (lower limit) and above the percentile UL (upper limit) then compute the mean, e.g. trim_mean_25_80. This statistic is not good for few time series data
 
-        - `linear_trend`: compute the linear trend (slope of the line) using least-squares method of the valid pixels time series ordered by the date of images. The output by default is multiply by 10 in signed integer. Required extra metadata [\[2\]](#extra-metadata)
+        - `linear_trend`: compute the linear trend (slope of the line) using least-squares method of the valid pixels time series ordered by the date of images. The output by default is multiply by 1000 in signed integer. Required extra metadata [\[2\]](#extra-metadata)
 
     - example: -stat median
 
