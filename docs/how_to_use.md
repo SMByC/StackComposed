@@ -10,7 +10,7 @@ There are some recommendation for the data input for process, all input images n
 - Have the same pixel size
 - Have pixel registration
 
-For the moment, the image formats support are: `tif` and `img`
+For the moment, the image formats support are: `tif`, `img` and `ENVI` (hdr)
 
 ## Usage
 
@@ -35,13 +35,13 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
 
         - `std`: compute the standard deviation
 
-        - `valid_pixels`: count the valid pixels
+        - `valid_pixels`: compute the count of valid pixels
 
-        - `last_pixel`: the last valid pixel base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+        - `last_pixel`: return the last _valid_ pixel base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
 
-        - `jday_last_pixel`: the julian day of the last valid pixel base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+        - `jday_last_pixel`: return the julian day of the _last valid pixel_ base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
 
-        - `jday_median`: the julian day of the median value base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+        - `jday_median`: return the julian day of the median value base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
 
         - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
 
