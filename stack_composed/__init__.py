@@ -1,6 +1,6 @@
 
 
-__version__ = '17.7.10'  # year.month.day
+__version__ = '17.10.24'  # year.month.day
 
 
 header = \
