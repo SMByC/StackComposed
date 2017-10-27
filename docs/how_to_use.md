@@ -109,9 +109,13 @@ Choosing good values for chunks can strongly impact performance. StackComposed o
 Some statistics or arguments required extra information for each image to process. The StackComposed acquires this extra metadata using parsing of the filename. Currently support two format:
 
 * **Official Landsat filenames:**
-    * Example: LE70080532002152EDC00...tif
+    * Example:
+        * LE70080532002152EDC00...tif
+        * LC08_L1TP_007059_20161115...tif
+
 
 * **SMByC format:**
-    * Example: Landsat_8_53_020601_7ETM...tif
+    * Example:
+        * Landsat_8_53_020601_7ETM...tif
 
 For them extract: landsat version, sensor, path, row, date and julian day.
