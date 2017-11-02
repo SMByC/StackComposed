@@ -168,7 +168,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
                 else:
                     gdal_output_type = gdal.GDT_UInt16
             if stat in ['linear_trend']:
-                gdal_output_type = gdal.GDT_Int16
+                gdal_output_type = gdal.GDT_Int32
         else:
             if output_type == 'byte': gdal_output_type = gdal.GDT_Byte
             if output_type == 'uint16': gdal_output_type = gdal.GDT_UInt16
@@ -195,8 +195,10 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
 
         # convert nan value and set nodata value special by statistic
         if stat in ['linear_trend']:
-            output_array[np.isnan(output_array)] = -32768
-            outband.SetNoDataValue(-32768)
+            output_array[np.isnan(output_array)] = -2147483648
+            outband.SetNoDataValue(-2147483648)
+            output_filename = output_filename.replace("stack_composed_linear_trend_band",
+                                                      "stack_composed_linear_trend_x1e6_band")
         else:  # set nodata value depend of the output type
             if gdal_output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32, gdal.GDT_Int16, gdal.GDT_Int32]:
                 outband.SetNoDataValue(0)
