@@ -91,6 +91,11 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         if end_date is not None:
             images = [image for image in images if image.date <= end_date]
 
+    if len(images) <= 1:
+        print("\n\nAfter load (and filter images in range date if applicable) there are {} images to process.\n"
+              "StackComposed required at least 2 or more images to process.\n".format(len(images)))
+        exit(1)
+
     # get wrapper extent
     min_x = min([image.extent[0] for image in images])
     max_y = max([image.extent[1] for image in images])
