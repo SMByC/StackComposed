@@ -22,8 +22,9 @@ class Image:
     wrapper_x_res = None
     wrapper_y_res = None
     wrapper_shape = None
-    # global projection
+    # global projection/geotransform
     projection = None
+    geotransform = None
 
     def __init__(self, file_path):
         self.file_path = self.get_dataset_path(file_path)
@@ -40,9 +41,11 @@ class Image:
         self.y_res = abs(float(y_res))
         # number of bands
         self.n_bands = gdal_file.RasterCount
-        # projection
+        # get projection and geotransform
         if Image.projection is None:
-            Image.projection = gdal_file.GetProjectionRef()
+            Image.projection = gdal_file.GetProjection()
+        if Image.geotransform is None:
+            Image.geotransform = gdal_file.GetGeoTransform()
         del gdal_file
         # output type
         self.output_type = None

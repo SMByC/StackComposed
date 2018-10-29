@@ -214,14 +214,13 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         outband.WriteArray(output_array)
 
         # set projection and geotransform
-        outRasterSRS = osr.SpatialReference()
-        outRasterSRS.ImportFromWkt(Image.projection)
-        outRaster.SetProjection(outRasterSRS.ExportToWkt())
-        outRaster.SetGeoTransform((Image.wrapper_extent[0], Image.wrapper_x_res, 0,
-                                   Image.wrapper_extent[1], 0, -Image.wrapper_y_res))
+        if Image.geotransform is not None:
+            outRaster.SetGeoTransform(Image.geotransform)
+        if Image.projection is not None:
+            outRaster.SetProjection(Image.projection)
 
         # clean
-        del driver, outRaster, outband, outRasterSRS, output_array
+        del driver, outRaster, outband, output_array
         # force run garbage collector to release unreferenced memory
         gc.collect()
 
