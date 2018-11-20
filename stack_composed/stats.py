@@ -11,7 +11,6 @@
 #
 import dask.array as da
 import numpy as np
-from dask import multiprocessing
 
 from stack_composed.image import Image
 
@@ -175,6 +174,6 @@ def statistic(stat, images, band, num_process, chunksize):
 
     # process
     map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
-    result_array = map_blocks.compute(num_workers=num_process, get=multiprocessing.get)
+    result_array = map_blocks.compute(num_workers=num_process, scheduler="processes")
 
     return result_array
