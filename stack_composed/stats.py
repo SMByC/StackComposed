@@ -162,7 +162,7 @@ def statistic(stat, images, band, num_process, chunksize):
             # all chunks are empty, return the chunk with nan
             return np.full((yc_size, xc_size), np.nan)
 
-        # for some statistics that required extra metadata
+        # for some statistics that required filename as metadata
         metadata = {}
         if stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
             metadata["date"] = np.array([image.date for image in images])[mask_none]

@@ -37,17 +37,17 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
 
         - `valid_pixels`: compute the count of valid pixels
 
-        - `last_pixel`: return the last _valid_ pixel base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+        - `last_pixel`: return the last _valid_ pixel base on the date of the raster image, required filename as metadata [\[2\]](#extra-metadata)
 
-        - `jday_last_pixel`: return the julian day of the _last valid pixel_ base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+        - `jday_last_pixel`: return the julian day of the _last valid pixel_ base on the date of the raster image, required filename as metadata [\[2\]](#extra-metadata)
 
-        - `jday_median`: return the julian day of the median value base on the date of the raster image, required extra metadata [\[2\]](#extra-metadata)
+        - `jday_median`: return the julian day of the median value base on the date of the raster image, required filename as metadata [\[2\]](#extra-metadata)
 
         - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
 
         - `trim_mean_LL_UL`: compute the truncated mean, first clean the time pixels series below to percentile LL (lower limit) and above the percentile UL (upper limit) then compute the mean, e.g. trim_mean_25_80. This statistic is not good for few time series data
 
-        - `linear_trend`: compute the linear trend (slope of the line) using least-squares method of the valid pixels time series ordered by the date of images. The output by default is multiply by 1000 in signed integer. Required extra metadata [\[2\]](#extra-metadata)
+        - `linear_trend`: compute the linear trend (slope of the line) using least-squares method of the valid pixels time series ordered by the date of images. The output by default is multiply by 1000 in signed integer. required filename as metadata [\[2\]](#extra-metadata)
 
     - example: -stat median
 
@@ -80,12 +80,12 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
     - example: -ot float64
 
 - `-start` DATE (optional)
-    - filter the images with the start date DATE, can be used alone or in combination with -end argument, required extra metadata [\[2\]](#extra-metadata)
+    - filter the images with the start date DATE, can be used alone or in combination with -end argument, required filename as metadata [\[2\]](#extra-metadata)
     - format: YYYY-MM-DD
     - example: -start 2016-06-01
 
 - `-end` DATE (optional)
-    - filter the images with the end date DATE, can be used alone or in combination with -start argument, required extra metadata [\[2\]](#extra-metadata)
+    - filter the images with the end date DATE, can be used alone or in combination with -start argument, required filename as metadata [\[2\]](#extra-metadata)
     - format: YYYY-MM-DD
     - example: -end 2016-12-31
 
@@ -104,7 +104,7 @@ Choosing good values for chunks can strongly impact performance. StackComposed o
 
 - The size of the blocks should be large enough to hide scheduling overhead, which is a couple of milliseconds per task
 
-### Extra metadata
+### Filename as metadata
 
 Some statistics or arguments required extra information for each image to process. The StackComposed acquires this extra metadata using parsing of the filename. Currently support two format:
 

@@ -83,7 +83,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # load images
     images = [Image(landsat_file) for landsat_file in images_files]
 
-    # filter images based on the start date and/or end date, required extra metadata
+    # filter images based on the start date and/or end date, required filename as metadata
     if start_date is not None or end_date is not None:
         [image.set_metadata_from_filename() for image in images]
         if start_date is not None:
@@ -139,7 +139,7 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
     # set bounds for all images
     [image.set_bounds() for image in images]
 
-    # for some statistics that required extra metadata
+    # for some statistics that required filename as metadata
     if stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
         [image.set_metadata_from_filename() for image in images]
 
