@@ -6,6 +6,7 @@ cd $SOURCE
 
 # synchronize changes with repository, update and clean
 git fetch
+git pull
 git checkout -f
 git log -m -1 --name-status --pretty="format:"
 
