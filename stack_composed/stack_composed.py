@@ -33,7 +33,7 @@ from stack_composed.stats import statistic
 IMAGES_TYPES = ('.tif', '.TIF', '.img', '.IMG', '.hdr', '.HDR')
 
 
-def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_date=None, end_date=None):
+def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_date, end_date, inputs):
     # ignore warnings
     warnings.filterwarnings("ignore")
     print(header)
@@ -95,6 +95,9 @@ def run(stat, bands, inputs, output, output_type, num_process, chunksize, start_
         print("\n\nAfter load (and filter images in range date if applicable) there are {} images to process.\n"
               "StackComposed required at least 2 or more images to process.\n".format(len(images)))
         exit(1)
+
+    # save nodata set from arguments
+    Image.nodata_from_arg = nodata
 
     # get wrapper extent
     min_x = min([image.extent[0] for image in images])

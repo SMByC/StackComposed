@@ -56,6 +56,11 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
     - input: integer or integers comma separated
     - example: -bands 1,2,4
 
+- `-nodata` NODATA (optional)
+    - input pixel value to treat as nodata
+    - input: integer, float or string
+    - example: -nodata 0 (or: "<0", ">=0", "<0 or >1", ">=0 or <=1")
+
 - `-p` P (optional)
     - number of process
     - input: integer

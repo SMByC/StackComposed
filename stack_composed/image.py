@@ -24,6 +24,8 @@ class Image:
     wrapper_shape = None
     # global projection
     projection = None
+    # no data values from arguments
+    nodata_from_arg = None
 
     def __init__(self, file_path):
         self.file_path = self.get_dataset_path(file_path)
@@ -79,16 +81,28 @@ class Image:
         raster_band = gdal_file.GetRasterBand(band).ReadAsArray(xoff, yoff, xsize, ysize)
         raster_band = raster_band.astype(np.float32)
 
-        # convert the no data values to NaN
-        no_data_value = gdal_file.GetRasterBand(band).GetNoDataValue()
-        if no_data_value is not None:
-            raster_band[raster_band == no_data_value] = np.nan
-        if self.output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32]:
-            # convert the negative values and zero only for unsigned output
-            raster_band[raster_band <= 0] = np.nan
-        else:
-            # convert the zero values to NaN
-            raster_band[raster_band == 0] = np.nan
+        # convert the no data values from file to NaN
+        nodata_from_file = gdal_file.GetRasterBand(band).GetNoDataValue()
+        if nodata_from_file is not None:
+            raster_band[raster_band == nodata_from_file] = np.nan
+
+        # convert the no data values set from arguments to NaN
+        if Image.nodata_from_arg is not None and Image.nodata_from_arg != nodata_from_file:
+            if isinstance(Image.nodata_from_arg, (int, float)):
+                raster_band[raster_band == Image.nodata_from_arg] = np.nan
+            else:
+                for condition in Image.nodata_from_arg:
+                    if condition[0] == "<":
+                        raster_band[raster_band < condition[1]] = np.nan
+                    elif condition[0] == "<=":
+                        raster_band[raster_band <= condition[1]] = np.nan
+                    elif condition[0] == ">":
+                        raster_band[raster_band > condition[1]] = np.nan
+                    elif condition[0] == ">=":
+                        raster_band[raster_band >= condition[1]] = np.nan
+                    elif condition[0] == "==":
+                        raster_band[raster_band == condition[1]] = np.nan
+
         del gdal_file
 
         return raster_band
