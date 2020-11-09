@@ -4,12 +4,11 @@ The StackComposed compute the stack composed of a specific statistic of band val
 
 ## Documentation
 
-Home page documentation: [https://github.com/SMByC/StackComposed](https://github.com/SMByC/StackComposed)
+Home page documentation: [https://smbyc.github.io/StackComposed](https://smbyc.github.io/StackComposed)
 
 ## Source code
 
-The latest sources can be obtained from official repository:
-[https://smbyc.github.io/StackComposed](https://smbyc.github.io/StackComposed)
+The latest sources can be obtained from official repository: [https://github.com/SMByC/StackComposed](https://github.com/SMByC/StackComposed)
 
 ## Issue Tracker
 
