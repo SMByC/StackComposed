@@ -25,6 +25,7 @@ import warnings
 import numpy as np
 from osgeo import gdal, osr
 from dask.diagnostics import ProgressBar
+warnings.filterwarnings('ignore')
 
 from stack_composed import header
 from stack_composed.image import Image
@@ -35,7 +36,6 @@ IMAGES_TYPES = ('.tif', '.TIF', '.img', '.IMG', '.hdr', '.HDR')
 
 def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_date, end_date, inputs):
     # ignore warnings
-    warnings.filterwarnings("ignore")
     print(header)
 
     # check statistical option
