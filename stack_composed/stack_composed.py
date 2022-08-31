@@ -97,7 +97,7 @@ def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_
         exit(1)
 
     # save nodata set from arguments
-    Image.nodata_from_arg = nodata
+    for image in images: image.nodata_parameters = nodata
 
     # get wrapper extent
     min_x = min([image.extent[0] for image in images])

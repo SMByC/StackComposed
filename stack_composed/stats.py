@@ -16,7 +16,7 @@ from stack_composed.image import Image
 
 
 def statistic(stat, images, band, num_process, chunksize):
-    # create a empty initial wrapper raster for managed dask parallel
+    # create an empty initial wrapper raster for managed dask parallel
     # in chunks and storage result
     wrapper_array = da.empty(Image.wrapper_shape, chunks=chunksize)
     chunksize = wrapper_array.chunks[0][0]

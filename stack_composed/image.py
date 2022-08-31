@@ -24,8 +24,6 @@ class Image:
     wrapper_shape = None
     # global projection
     projection = None
-    # no data values from arguments
-    nodata_from_arg = None
 
     def __init__(self, file_path):
         self.file_path = self.get_dataset_path(file_path)
@@ -42,6 +40,8 @@ class Image:
         self.y_res = abs(float(y_res))
         # number of bands
         self.n_bands = gdal_file.RasterCount
+        # no data values from arguments
+        self.nodata_parameters = None
         # projection
         if Image.projection is None:
             Image.projection = gdal_file.GetProjectionRef()
@@ -87,11 +87,11 @@ class Image:
             raster_band[raster_band == nodata_from_file] = np.nan
 
         # convert the no data values set from arguments to NaN
-        if Image.nodata_from_arg is not None and Image.nodata_from_arg != nodata_from_file:
-            if isinstance(Image.nodata_from_arg, (int, float)):
-                raster_band[raster_band == Image.nodata_from_arg] = np.nan
+        if self.nodata_parameters is not None and self.nodata_parameters != nodata_from_file:
+            if isinstance(self.nodata_parameters, (int, float)):
+                raster_band[raster_band == self.nodata_parameters] = np.nan
             else:
-                for condition in Image.nodata_from_arg:
+                for condition in self.nodata_parameters:
                     if condition[0] == "<":
                         raster_band[raster_band < condition[1]] = np.nan
                     elif condition[0] == "<=":
