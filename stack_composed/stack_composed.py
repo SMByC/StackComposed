@@ -40,11 +40,19 @@ def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_
 
     # check statistical option
     if stat not in ('median', 'mean', 'gmean', 'max', 'min', 'std', 'valid_pixels', 'last_pixel',
-                    'jday_last_pixel', 'jday_median', 'linear_trend') and not stat.startswith(('percentile_', 'trim_mean_')):
+                    'jday_last_pixel', 'jday_median', 'linear_trend') \
+            and not stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
         print("\nError: argument '-stat' invalid choice: {}".format(stat))
-        print("choose from: median, mean, gmean, max, min, std, valid_pixels, last_pixel, "
+        print("choose from: extract_NN, median, mean, gmean, max, min, std, valid_pixels, last_pixel, "
               "jday_last_pixel, jday_median, linear_trend, percentile_NN, trim_mean_LL_UL")
         return
+    if stat.startswith('extract_'):
+        try:
+            int(stat.split('_')[1])
+        except:
+            print("\nError: argument '-stat' invalid choice: {}".format(stat))
+            print("the extract_NN must ends with a valid number, e.g. extract_2")
+            return
     if stat.startswith('percentile_'):
         try:
             int(stat.split('_')[1])
@@ -170,7 +178,7 @@ def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_
         # choose the default data type based on the statistic
         if output_type is None:
             if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel',
-                        'jday_median'] or stat.startswith(('percentile_', 'trim_mean_')):
+                        'jday_median'] or stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
                 gdal_output_type = gdal.GDT_UInt16
             if stat in ['std', 'snr']:
                 gdal_output_type = gdal.GDT_Float32

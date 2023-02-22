@@ -79,6 +79,8 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
 - `-stat` STAT (required)
     - statistic for compute the composed along the time axis ignoring any nans, this is, compute the statistic along the time series by pixel.
     - statistics options:
+        - `extract_NN`: extract from the inputs the value NN, any other value will be ignored, overlapped values NN remain NN, for example, for to extract the value 2 put "extract_2"
+
         - `median`: compute the median
 
         - `mean`: compute the arithmetic mean

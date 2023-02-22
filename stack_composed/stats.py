@@ -26,6 +26,15 @@ def statistic(stat, images, band, num_process, chunksize):
     # with the return being n by m, the shape of each band.
     #
 
+    # Extract the value NN
+    if stat.startswith('extract_'):
+        v = int(stat.split('_')[1])
+
+        # Extract the value NN any other values will be nan
+        def stat_func(stack_chunk, metadata):
+            stack_chunk[stack_chunk != v] = np.nan
+            return np.nanmean(stack_chunk, axis=2)
+
     # Compute the median
     if stat == 'median':
         def stat_func(stack_chunk, metadata):
