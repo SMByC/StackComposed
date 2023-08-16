@@ -140,15 +140,19 @@ def statistic(stat, images, band, num_process, chunksize):
         def linear_trend(pixel_time_series, index_sort, date_list):
             if np.isnan(pixel_time_series).all() or len(pixel_time_series[~np.isnan(pixel_time_series)]) == 1:
                 return np.nan
-            # Unix timestamp in days
+            # Convert dates to Unix timestamp in days, then get the diff from minimum
             x = [int(int(date_list[index].strftime("%s")) / 86400) for index in index_sort]
-            x = [i-x[0] for i in x]  # diff from minimum
-            pts = np.array([pixel_time_series[index] for index in index_sort])
+            min_x = x[0]
+            x = [i - min_x for i in x]  # diff from minimum
+
+            # Get pixel data as a properly masked numpy array
+            pts = [pixel_time_series[index] for index in index_sort]
             y = np.ma.array(pts, mask=np.isnan(pts))
 
             ssxm, ssxym, ssyxm, ssym = np.ma.cov(x, y, bias=1).flat
             slope = ssxym / ssxm
-            return slope*1000000
+
+            return slope * 1e6
 
         def stat_func(stack_chunk, metadata):
             index_sort = np.argsort(metadata['date'])  # from the oldest to most recent
