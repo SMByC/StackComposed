@@ -158,35 +158,52 @@ def statistic(stat, images, band, num_process, chunksize):
             index_sort = np.argsort(metadata['date'])  # from the oldest to most recent
             return np.apply_along_axis(linear_trend, 2, stack_chunk, index_sort, metadata['date'])
 
-    # Compute the statistical for the respective chunk
-    def calc(block, block_id=None, chunksize=None):
-        yc = block_id[0] * chunksize
-        yc_size = block.shape[0]
-        xc = block_id[1] * chunksize
-        xc_size = block.shape[1]
+    # Create an instance of BlockCalculator
+    block_calculator = BlockCalculator(images, band, stat, stat_func)
 
-        # make stack reading all images only in specific chunk
-        chunks_list = [image.get_chunk_in_wrapper(band, xc, xc_size, yc, yc_size) for image in images]
-        # delete empty chunks
-        mask_none = [False if x is None else True for x in chunks_list]
-        chunks_list = np.array([i for i in chunks_list if i is not None])
-
-        if not chunks_list.size:
-            # all chunks are empty, return the chunk with nan
-            return np.full((yc_size, xc_size), np.nan)
-
-        # for some statistics that required filename as metadata
-        metadata = {}
-        if stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
-            metadata["date"] = np.array([image.date for image in images])[mask_none]
-        if stat in ["jday_last_pixel", "jday_median"]:
-            metadata["jday"] = np.array([image.jday for image in images])[mask_none]
-
-        stack_chunk = np.stack(chunks_list, axis=2)
-        return stat_func(stack_chunk, metadata)
-
-    # process
-    map_blocks = da.map_blocks(calc, wrapper_array, chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
+    # Process
+    map_blocks = da.map_blocks(block_calculator.calculate, wrapper_array,
+                               chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
     result_array = map_blocks.compute(num_workers=num_process, scheduler="processes")
 
     return result_array
+
+
+class BlockCalculator:
+    """Compute the statistical for the respective chunk"""
+    def __init__(self, images, band, stat, stat_func):
+        self.images = images
+        self.band = band
+        self.stat_func = stat_func
+        self.stat = stat
+
+    def _prepare_data(self, xc, yc, xc_size, yc_size):
+        chunks_list = [image.get_chunk_in_wrapper(self.band, xc, xc_size, yc, yc_size) for image in self.images]
+        mask_none = np.array([x is not None for x in chunks_list])
+        valid_chunks = np.array(chunks_list)[mask_none]
+        return valid_chunks, mask_none
+
+    def _prepare_metadata(self, mask_none):
+        metadata = {}
+        if self.stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
+            metadata["date"] = np.array([image.date for image in self.images])[mask_none]
+        if self.stat in ["jday_last_pixel", "jday_median"]:
+            metadata["jday"] = np.array([image.jday for image in self.images])[mask_none]
+        return metadata
+
+    def calculate(self, block, block_id, chunksize):
+        yc = block_id[0] * chunksize
+        xc = block_id[1] * chunksize
+        yc_size, xc_size = block.shape
+
+        valid_chunks, mask_none = self._prepare_data(xc, yc, xc_size, yc_size)
+
+        if valid_chunks.size == 0:
+            return np.full((yc_size, xc_size), np.nan)
+
+        metadata = self._prepare_metadata(mask_none)
+
+        stack_chunk = np.stack(valid_chunks, axis=2)
+        return self.stat_func(stack_chunk, metadata)
+
+
