@@ -34,7 +34,7 @@ from stack_composed.stats import statistic
 IMAGES_TYPES = ('.tif', '.TIF', '.img', '.IMG', '.hdr', '.HDR')
 
 
-def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_date, end_date, inputs):
+def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksize, start_date, end_date, inputs):
     # ignore warnings
     print(header)
 
@@ -68,6 +68,58 @@ def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_
             print("\nError: argument '-stat' invalid choice: {}".format(stat))
             print("the trim_mean_LL_UL must ends with a valid limits, e.g. trim_mean_10_80")
             return
+
+    # check preprocessing options
+    if preproc is not None:
+        if not preproc.startswith(('less_than_', 'greater_than_', 'between_', 'percentile_')) and \
+            not preproc.endswith(('_std_devs', '_IQR')):
+            print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+            print("choose from: less_than_NN, greater_than_NN, between_LL_UL, percentile_LL_UL, NN_std_devs, NN_IQR")
+            return
+        if preproc.startswith('less_than_'):
+            try:
+                int(preproc.split('_')[2])
+            except:
+                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+                print("the less_than_NN must ends with a valid number, e.g. less_than_1000")
+                return
+        if preproc.startswith('greater_than_'):
+            try:
+                int(preproc.split('_')[2])
+            except:
+                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+                print("the greater_than_NN must ends with a valid number, e.g. greater_than_0")
+                return
+        if preproc.startswith('between_'):
+            try:
+                int(preproc.split('_')[1])
+                int(preproc.split('_')[2])
+            except:
+                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+                print("the between_LL_UL must ends with a valid limits, e.g. between_0_1000")
+                return
+        if preproc.startswith('percentile_'):
+            try:
+                int(preproc.split('_')[1])
+                int(preproc.split('_')[2])
+            except:
+                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+                print("the percentile_LL_UL must ends with a valid limits, e.g. percentile_10_90")
+                return
+        if preproc.endswith('_std_devs'):
+            try:
+                float(preproc.split('_')[0])
+            except:
+                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+                print("the NN_std_devs must starts with a valid number, e.g. 2.5_std_devs")
+                return
+        if preproc.endswith('_IQR'):
+            try:
+                float(preproc.split('_')[0])
+            except:
+                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
+                print("the NN_IQR must starts with a valid number, e.g. 1.5_IQR")
+                return
 
     print("\nLoading and prepare images in path(s):", flush=True)
     # search all Image files in inputs recursively if the files are in directories
@@ -203,7 +255,7 @@ def run(stat, bands, nodata, output, output_type, num_process, chunksize, start_
         ### process ###
         # Calculate the statistics
         print("\nProcessing the {} for band {}:".format(stat, band))
-        output_array = statistic(stat, images, band, num_process, chunksize)
+        output_array = statistic(stat, preproc, images, band, num_process, chunksize)
 
         ### save result ###
         # create output raster

@@ -1,6 +1,9 @@
 # StackComposed
 
-The StackComposed compute the stack composed of a specific statistic of band values for several time series of georeferenced data (such as Landsat images), even if these are in different scenes or tiles. The result is a output of statistic compute for all valid pixels values across the time axis (z-axis), in the wrapper extent for all input data in parallels process.
+The StackComposed compute the stack composed of a specific statistic of band values for several time series of
+georeferenced data (such as Landsat images), even if these are in different scenes or tiles. The result is a output of
+statistic compute for all valid pixels values across the time axis (z-axis), in the wrapper extent for all input data in
+parallels process.
 
 The main aim of this app are:
 
@@ -12,7 +15,8 @@ The main aim of this app are:
 
 * Include the overlapping areas for compute the statistics, e.g. two adjacent scenes with overlapping areas.
 
-* Compute some statistics  that depend of time data order (such as last valid pixel, pearson correlation) using the filename for parse metadata (for now only for Landsat images)
+* Compute some statistics that depend of time data order (such as last valid pixel, pearson correlation) using the
+  filename for parse metadata (for now only for Landsat images)
 
 ## Process flow
 
@@ -22,16 +26,17 @@ The general process flow is:
 
 * Calculate the wrapper extent for all input data
 
-* Position each data in the wrapper extent (the app does not exactly do this, use a location for extract the chunk in the right position in wrapper, this is only for understand the process)
+* Position each data in the wrapper extent (the app does not exactly do this, use a location for extract the chunk in
+  the right position in wrapper, this is only for understand the process)
 
 * Make the calculation of the statistic in parallel process by chunks
 
 * Save result with the same projection with the wrapper extent
 
-
 ### Compute the wrapper extent
 
-The wrapper extent is the minimum extent that cover all input images, in this example there are 3 scenes of the images with different position, the wrapper extent is shown in dotted line:
+The wrapper extent is the minimum extent that cover all input images, in this example there are 3 scenes of the images
+with different position, the wrapper extent is shown in dotted line:
 
 ![](img/wrapper_extent.png)
 
@@ -39,7 +44,10 @@ The wrapper extent is the size for the result.
 
 ### Data cube process
 
-With the wrapper extent then the images are located in a right position in it and put all images in a stack for process, the images are ordered across the time like a cube or a 3D matrix. When compute a statistic, it process all pixel for the wrapper extent, first extract all pixel values in all images in their corresponding position across the z-axis, for some images this position don't have data, then it return a NaN value that is not included for the statistic.
+With the wrapper extent then the images are located in a right position in it and put all images in a stack for process,
+the images are ordered across the time like a cube or a 3D matrix. When compute a statistic, it process all pixel for
+the wrapper extent, first extract all pixel values in all images in their corresponding position across the z-axis, for
+some images this position don't have data, then it return a NaN value that is not included for the statistic.
 
 ![](img/process.png)
 
@@ -50,7 +58,10 @@ There are mainly two problems for serial process (no parallel):
 - When are several images (million of pixels) required a lot of time for the process
 - For load several images (data cube) for process required a lot of ram memory for do it
 
-For solved it, the StackComposed divide the data cube in equal chunks, each chunks are processes in parallel depends of the number of process assigned. When one chunk is being process, it load only the chunk part for all images and not load the entire image for do it, with this the StackComposed only required a ram memory enough only for the sizes and the number of chunks that are currently being processed in parallel.
+For solved it, the StackComposed divide the data cube in equal chunks, each chunks are processes in parallel depends of
+the number of process assigned. When one chunk is being process, it load only the chunk part for all images and not load
+the entire image for do it, with this the StackComposed only required a ram memory enough only for the sizes and the
+number of chunks that are currently being processed in parallel.
 
 ![](img/chunks.png)
 
@@ -73,42 +84,59 @@ For the moment, the image formats support are: `tif`, `img` and `ENVI` (hdr)
 `StackComposed` takes some command-line options:
 
 ```bash
-stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-end DATE] [-o OUTPUT] [-ot dtype] inputs
+stack-composed -stat STAT -preproc PREPROC -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-end DATE] [-o OUTPUT] 
+[-ot dtype] inputs
 ```
 
 - `-stat` STAT (required)
-    - statistic for compute the composed along the time axis ignoring any nans, this is, compute the statistic along the time series by pixel.
+    - statistic for compute the composed along the time axis ignoring any nans, this is, compute the statistic along the
+      time series by pixel.
     - statistics options:
-        - `extract_NN`: extract from the inputs the value NN, any other value will be ignored, overlapped values NN remain NN, for example, for to extract the value 2 put "extract_2"
-
+        - `extract_NN`: extract from the inputs the value NN, any other value will be ignored, overlapped values NN
+          remain NN, for example, for to extract the value 2 put "extract_2"
         - `median`: compute the median
-
         - `mean`: compute the arithmetic mean
-
         - `gmean`: compute the geometric mean, that is the n-th root of (x1 * x2 * ... * xn)
-
         - `max`: compute the maximum value
-
         - `min`: compute the minimum value
-
         - `std`: compute the standard deviation
-
         - `valid_pixels`: compute the count of valid pixels
-
-        - `last_pixel`: return the last _valid_ pixel base on the date of the raster image, required filename as metadata [(extra metadata)](#filename-as-metadata)
-
-        - `jday_last_pixel`: return the julian day of the _last valid pixel_ base on the date of the raster image, required filename as metadata [(extra metadata)](#filename-as-metadata)
-
-        - `jday_median`: return the julian day of the median value base on the date of the raster image, required filename as metadata [(extra metadata)](#filename-as-metadata)
-
-        - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the range 0-100)
-
-        - `trim_mean_LL_UL`: compute the truncated mean, first clean the time pixels series below to percentile LL (lower limit) and above the percentile UL (upper limit) then compute the mean, e.g. trim_mean_25_80. This statistic is not good for few time series data
-
-        - `linear_trend`: compute the linear trend (slope of the line) using least-squares method of the valid pixels time series ordered by the date of images. The output by default is multiply by 1000 in signed integer. required filename as metadata [(extra metadata)](#filename-as-metadata)
-
+        - `last_pixel`: return the last _valid_ pixel base on the date of the raster image, required filename as
+          metadata [(extra metadata)](#filename-as-metadata)
+        - `jday_last_pixel`: return the julian day of the _last valid pixel_ base on the date of the raster image,
+          required filename as metadata [(extra metadata)](#filename-as-metadata)
+        - `jday_median`: return the julian day of the median value base on the date of the raster image, required
+          filename as metadata [(extra metadata)](#filename-as-metadata)
+        - `percentile_nn`: compute the percentile nn, for example, for percentile 25 put "percentile_25" (must be in the
+          range 0-100)
+        - `trim_mean_LL_UL`: compute the truncated mean, first clean the time pixels series below to percentile LL (
+          lower limit) and above the percentile UL (upper limit) then compute the mean, e.g. trim_mean_25_80. This
+          statistic is not good for few time series data
+        - `linear_trend`: compute the linear trend (slope of the line) using least-squares method of the valid pixels
+          time series ordered by the date of images. The output by default is multiply by 1000 in signed integer.
+          required filename as metadata [(extra metadata)](#filename-as-metadata)
     - example: -stat median
 
+- `-preproc` PREPROC (optional)
+    - pre-processing the input data to define the valid data and clean from outliers before compute the statistic
+    - preprocesing options:
+        - `less_than_NN`: define the valid data less than NN value and remove outside this limit, for example, for
+          define the valid data less than 1000 put "less_than_1000"
+        - `greater_than_NN`: define the valid data greater than NN value and remove outside this limit, for example, for
+          define the valid data greater than 0 put "greater_than_0"
+        - `between_LL_UL`: define the valid data between LL and UL values and remove outside this limit, for example,
+          for
+          define the valid data between 0 and 1000 put "between_0_1000"
+        - `percentile_LL_UL`: define the valid data between the percentile LL and UL values and remove outside this
+          limit,
+          for example, for define the valid data between the percentile 25 and 75 put "percentile_25_75"
+        - `NN_std_devs`: define the valid data between the mean minus and plus NN standard deviations and remove
+          outside this limit, for example, for define the valid data between the mean minus and plus 2.5 standard
+          deviations put "2.5_std_devs"
+        - `NN_IQR`: define the valid data between the NN IQR (interquartile range) and remove outside this limit,
+          for example, for define the valid data between the 1.5 IQR put "1.5_IQR"
+    - example: -preproc less_than_1000
+  
 - `-bands` BANDS (required)
     - band or bands to process
     - input: integer or integers comma separated
@@ -143,12 +171,14 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
     - example: -ot float64
 
 - `-start` DATE (optional)
-    - filter the images with the start date DATE, can be used alone or in combination with -end argument, required filename as metadata [(extra metadata)](#filename-as-metadata)
+    - filter the images with the start date DATE, can be used alone or in combination with -end argument, required
+      filename as metadata [(extra metadata)](#filename-as-metadata)
     - format: YYYY-MM-DD
     - example: -start 2016-06-01
 
 - `-end` DATE (optional)
-    - filter the images with the end date DATE, can be used alone or in combination with -start argument, required filename as metadata [(extra metadata)](#filename-as-metadata)
+    - filter the images with the end date DATE, can be used alone or in combination with -start argument, required
+      filename as metadata [(extra metadata)](#filename-as-metadata)
     - format: YYYY-MM-DD
     - example: -end 2016-12-31
 
@@ -159,7 +189,9 @@ stack-composed -stat STAT -bands BANDS [-p P] [-chunks CHUNKS] [-start DATE] [-e
 
 #### Chunks sizes
 
-Choosing good values for chunks can strongly impact performance. StackComposed only required a ram memory enough only for the sizes and the number of chunks that are currently being processed in parallel, therefore the chunks sizes going together with the number of process. Here are some general guidelines. The strongest guide is memory:
+Choosing good values for chunks can strongly impact performance. StackComposed only required a ram memory enough only
+for the sizes and the number of chunks that are currently being processed in parallel, therefore the chunks sizes going
+together with the number of process. Here are some general guidelines. The strongest guide is memory:
 
 - The size of your blocks should fit in memory.
 
@@ -169,7 +201,8 @@ Choosing good values for chunks can strongly impact performance. StackComposed o
 
 #### Filename as metadata
 
-Some statistics or arguments required extra information for each image to process. The StackComposed acquires this extra metadata using parsing of the filename. Currently support two format:
+Some statistics or arguments required extra information for each image to process. The StackComposed acquires this extra
+metadata using parsing of the filename. Currently support two format:
 
 * **Official Landsat filenames:**
     * Example:
@@ -185,12 +218,13 @@ For them extract: landsat version, sensor, path, row, date and julian day.
 
 ## Issue Tracker
 
-Issues, ideas and enhancements: [https://bitbucket.org/smbyc/stackcomposed/issues](https://bitbucket.org/smbyc/stackcomposed/issues)
-
+Issues, ideas and
+enhancements: [https://bitbucket.org/smbyc/stackcomposed/issues](https://bitbucket.org/smbyc/stackcomposed/issues)
 
 ## About us
 
-StackComposed was developing, designed and implemented by the Group of Forest and Carbon Monitoring System (SMByC), operated by the Institute of Hydrology, Meteorology and Environmental Studies (IDEAM) - Colombia.
+StackComposed was developing, designed and implemented by the Group of Forest and Carbon Monitoring System (SMByC),
+operated by the Institute of Hydrology, Meteorology and Environmental Studies (IDEAM) - Colombia.
 
 Author and developer: *Xavier Corredor Ll.*  
 Theoretical support, tester and product verification: SMByC-PDI group
