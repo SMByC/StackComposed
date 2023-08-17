@@ -1,7 +1,7 @@
 ## Build and Upload:
 
     python setup.py sdist bdist_wheel
-    twine upload dist/*
+    twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
 
 ## PyInstaller:
     
