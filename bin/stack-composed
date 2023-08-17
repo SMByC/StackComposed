@@ -63,7 +63,7 @@ def script():
 
     parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True)
     parser.add_argument('-bands', type=str, help='Band or bands to process, e.g. 1,2,3', required=True)
-    parser.add_argument('-nodata', type=nodata_validator, required=False,
+    parser.add_argument('-nodata', type=nodata_validator, required=False, default=None,
                         help='Input pixel value to treat as nodata, e.g: 0, "<0", ">=0", "<0 or >1", ">=0 or <=1"')
     parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
                         default=os.getcwd())
