@@ -33,11 +33,11 @@ pip3 install stack-composed
 
 ### From source code
 
-To install StackComposed from source, clone the repository from Bitbucket
+To install StackComposed from source:
 
 ```bash
-hg clone https://bitbucket.org/smbyc/stackcomposed
-cd stackcomposed
+git clone https://github.com/SMByC/StackComposed
+cd StackComposed
 python3 setup.py install
 # or
 pip3 install -e .
@@ -47,12 +47,12 @@ pip3 install -e .
 
 StackComposed was developing, designed and implemented by the Group of Forest and Carbon Monitoring System (SMByC), operated by the Institute of Hydrology, Meteorology and Environmental Studies (IDEAM) - Colombia.
 
-Author and developer: *Xavier Corredor Ll.*  
+Author and developer: *Xavier C. Llano*  
 Theoretical support, tester and product verification: SMByC-PDI group
 
 ### Contact
 
-Xavier Corredor Ll.: *xcorredorl (a) ideam.gov.co*  
+Xavier C. Llano: *xavier.corredor.llano@gmail.com*  
 SMByC: *smbyc (a) ideam.gov.co*
 
 ## License

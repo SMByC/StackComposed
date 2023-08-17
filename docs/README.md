@@ -219,19 +219,19 @@ For them extract: landsat version, sensor, path, row, date and julian day.
 ## Issue Tracker
 
 Issues, ideas and
-enhancements: [https://bitbucket.org/smbyc/stackcomposed/issues](https://bitbucket.org/smbyc/stackcomposed/issues)
+enhancements: [https://github.com/SMByC/StackComposed/issues](https://github.com/SMByC/StackComposed/issues)
 
 ## About us
 
 StackComposed was developing, designed and implemented by the Group of Forest and Carbon Monitoring System (SMByC),
 operated by the Institute of Hydrology, Meteorology and Environmental Studies (IDEAM) - Colombia.
 
-Author and developer: *Xavier Corredor Ll.*  
+Author and developer: *Xavier C. Llano*  
 Theoretical support, tester and product verification: SMByC-PDI group
 
 ### Contact
 
-Xavier Corredor Ll.: *xcorredorl (a) ideam.gov.co*  
+Xavier C. Llano: *xavier.corredor.llano@gmail.com*  
 SMByC: *smbyc (a) ideam.gov.co*
 
 ## License
