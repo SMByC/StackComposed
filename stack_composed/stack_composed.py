@@ -3,8 +3,8 @@
 #
 #  Stack Composed
 #
-#  Copyright (C) 2016-2018 Xavier Corredor Llano, SMBYC
-#  Email: xcorredorl at ideam.gov.co
+#  Copyright (C) 2016-2023 Xavier Corredor Llano, SMBYC
+#  Email: xavier.corredor.llano@gmail.com
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by

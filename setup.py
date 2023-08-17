@@ -3,8 +3,8 @@
 #
 #  Stack Composed
 #
-#  Copyright (C) 2016-2018 Xavier Corredor Llano, SMBYC
-#  Email: xcorredorl at ideam.gov.co
+#  Copyright (C) 2016-2023 Xavier Corredor Llano, SMBYC
+#  Email: xavier.corredor.llano@gmail.com
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ setup(
     description='Compute and generate the composed of a raster images stack',
     long_description=long_description,
     author='Xavier Corredor Llano, SMBYC',
-    author_email='xcorredorl@ideam.gov.co',
+    author_email='xavier.corredor.llano@gmail.com',
     url='https://smbyc.bitbucket.io/stackcomposed',
     license='GPLv3',
     packages=find_packages(),

@@ -13,7 +13,7 @@ StackComposed v{}
 Run with '-h' for more options or visit the documentation:
 https://smbyc.bitbucket.io/stackcomposed/
 
-Copyright (C) 2018 Xavier Corredor Ll.
+Copyright (C) 2023 Xavier Corredor Ll.
 Sistema de Monitoreo de Bosques y Carbono - SMByC and FAO
 General Public License - GPLv3
 
@@ -25,6 +25,6 @@ For more information visit:
 https://smbyc.bitbucket.io/stackcomposed/
 
 StackComposed v{}
-Copyright (C) Xavier Corredor Ll. <xcorredorl@ideam.gov.co>
+Copyright (C) Xavier Corredor Ll. <xavier.corredor.llano@gmail.com>
 Sistema de Monitoreo de Bosques y Carbono - SMByC and FAO
 General Public License - GPLv3'''.format(__version__)
