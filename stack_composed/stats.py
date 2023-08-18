@@ -181,7 +181,7 @@ class BlockCalculator:
     def _preprocess(self, chunks):
 
         if self.prep_func is None:
-            return chunks
+            return np.array(chunks)
 
         if self.prep_func.startswith('less_than_'):
             less_than_N = int(self.prep_func.split('_')[2])
