@@ -184,14 +184,14 @@ class BlockCalculator:
             return np.array(chunks)
 
         if self.prep_func.startswith('less_than_'):
-            less_than_N = int(self.prep_func.split('_')[2])
-            mask = np.array([chunk < less_than_N for chunk in chunks])
+            threshold = int(self.prep_func.split('_')[2])
+            mask = np.array([chunk < threshold for chunk in chunks])
             chunks_data = np.where(mask, chunks, np.nan)
             return chunks_data
 
         if self.prep_func.startswith('greater_than_'):
-            greater_than_N = int(self.prep_func.split('_')[2])
-            mask = np.array([chunk > greater_than_N for chunk in chunks])
+            threshold = int(self.prep_func.split('_')[2])
+            mask = np.array([chunk > threshold for chunk in chunks])
             chunks_data = np.where(mask, chunks, np.nan)
             return chunks_data
 
