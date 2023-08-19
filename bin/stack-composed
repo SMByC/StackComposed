@@ -41,33 +41,13 @@ def script():
             msg = "not a valid date: '{0}'".format(s)
             raise argparse.ArgumentTypeError(msg)
 
-    def nodata_validator(s):
-        try:
-            return float(s)
-        except ValueError:
-            def split_condition(str_cond):
-                str_cond = str_cond.strip().replace(" ", "")
-                if str_cond[1] == "=":
-                    return [str_cond[0:2], float(str_cond[2::])]
-                else:
-                    return [str_cond[0:1], float(str_cond[1::])]
-            try:
-                if "or" in s:
-                    conditions = [split_condition(str_cond) for str_cond in s.split("or")]
-                    return conditions
-                else:
-                    return [split_condition(s)]
-            except:
-                msg = "not a valid condition to define the nodata: '{0}'".format(s)
-                raise argparse.ArgumentTypeError(msg)
-
     parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True)
     parser.add_argument('-preproc', type=str, dest='preproc',
                         help='Preprocessing function to define the valid data and clean from outliers before compute the statistic',
                         required=False, default=None)
     parser.add_argument('-bands', type=str, help='Band or bands to process, e.g. 1,2,3', required=True)
-    parser.add_argument('-nodata', type=nodata_validator, required=False, default=None,
-                        help='Input pixel value to treat as nodata, e.g: 0, "<0", ">=0", "<0 or >1", ">=0 or <=1"')
+    parser.add_argument('-nodata', type=float, required=False, default=None,
+                        help='Input pixel value to treat as nodata, int or float')
     parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
                         default=os.getcwd())
     parser.add_argument('-ot', type=str, dest='output_type', help='Output data type for results', required=False,

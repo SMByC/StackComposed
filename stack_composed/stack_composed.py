@@ -157,7 +157,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         exit(1)
 
     # save nodata set from arguments
-    for image in images: image.nodata_parameters = nodata
+    for image in images: image.nodata_from_arg = nodata
 
     # get wrapper extent
     min_x = min([image.extent[0] for image in images])
@@ -227,6 +227,10 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
                   "       filename: {}\n".format(output))
             exit(1)
 
+        if stat in ['linear_trend']:
+            output_filename = output_filename.replace("stack_composed_linear_trend_band",
+                                                      "stack_composed_linear_trend_x1e6_band")
+
         # choose the default data type based on the statistic
         if output_type is None:
             if stat in ['median', 'mean', 'gmean', 'max', 'min', 'last_pixel', 'jday_last_pixel',
@@ -265,17 +269,21 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
                                   nbands, gdal_output_type)
         outband = outRaster.GetRasterBand(nbands)
 
-        # convert nan value and set nodata value special by statistic
+        # set the nodata to the output file
         if stat in ['linear_trend']:
+            # convert nan value and set nodata value specific for linear trend
             output_array[np.isnan(output_array)] = -2147483648
             outband.SetNoDataValue(-2147483648)
-            output_filename = output_filename.replace("stack_composed_linear_trend_band",
-                                                      "stack_composed_linear_trend_x1e6_band")
-        else:  # set nodata value depend of the output type
-            if gdal_output_type in [gdal.GDT_Byte, gdal.GDT_UInt16, gdal.GDT_UInt32, gdal.GDT_Int16, gdal.GDT_Int32]:
-                outband.SetNoDataValue(0)
-            if gdal_output_type in [gdal.GDT_Float32, gdal.GDT_Float64]:
-                outband.SetNoDataValue(np.nan)
+        elif nodata is not None:
+            outband.SetNoDataValue(nodata)
+        else:
+            # set the nodata based on the input files
+            nodata_from_file = set([image.nodata_from_file[band] for image in images])
+            if len(nodata_from_file) == 1:
+                outband.SetNoDataValue(nodata_from_file.pop())
+            elif None not in nodata_from_file:
+                print("\nWarning: the nodata value is not set to the output file "
+                      "because the input files have different nodata values.\n")
 
         # write band
         outband.WriteArray(output_array)

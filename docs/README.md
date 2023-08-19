@@ -144,8 +144,8 @@ stack-composed -stat STAT -preproc PREPROC -bands BANDS [-p P] [-chunks CHUNKS] 
 
 - `-nodata` NODATA (optional)
     - input pixel value to treat as nodata
-    - input: integer, float or string
-    - example: -nodata 0 (or: "<0", ">=0", "<0 or >1", ">=0 or <=1")
+    - input: integer or float
+    - example: -nodata 0
 
 - `-p` P (optional)
     - number of process

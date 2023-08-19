@@ -41,7 +41,7 @@ class Image:
         # number of bands
         self.n_bands = self.gdal_file.RasterCount
         # no data values
-        self.nodata_parameters = None
+        self.nodata_from_arg = None
         self.nodata_from_file = [self.gdal_file.GetRasterBand(i).GetNoDataValue() for i in range(1, self.n_bands + 1)]
         # projection
         if Image.projection is None:
@@ -88,16 +88,9 @@ class Image:
             raster_band[nodata_mask] = np.nan
 
         # convert the no data values set from arguments to NaN
-        if self.nodata_parameters is not None and self.nodata_parameters != self.nodata_from_file[band]:
-            if isinstance(self.nodata_parameters, (int, float)):
-                nodata_mask = raster_band == self.nodata_parameters
-                raster_band[nodata_mask] = np.nan
-            else:
-                for condition in self.nodata_parameters:
-                    operator, threshold = condition[0], condition[1]
-                    eval_string = f'raster_band {operator} {threshold}'
-                    nodata_mask = eval(eval_string)
-                    raster_band[nodata_mask] = np.nan
+        if self.nodata_from_arg is not None and self.nodata_from_arg != self.nodata_from_file[band]:
+            nodata_mask = raster_band == self.nodata_from_arg
+            raster_band[nodata_mask] = np.nan
 
         return raster_band
 
