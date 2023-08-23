@@ -303,4 +303,56 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
     print("\nProcess completed!")
 
 
+def cli():
+    """
+    Run as a script with arguments
+    """
+    import argparse
+    from datetime import datetime
+    from multiprocessing import cpu_count
 
+    from stack_composed import epilog
+
+    # Create parser arguments
+    parser = argparse.ArgumentParser(
+        prog='stack-composed',
+        description='Compute and generate the composed of a raster images stack',
+        epilog=epilog,
+        formatter_class=argparse.RawTextHelpFormatter)
+
+    def date_validator(s):
+        try:
+            return datetime.strptime(s, "%Y-%m-%d").date()
+        except ValueError:
+            msg = "not a valid date: '{0}'".format(s)
+            raise argparse.ArgumentTypeError(msg)
+
+    parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True)
+    parser.add_argument('-preproc', type=str, dest='preproc',
+                        help='Preprocessing function to define the valid data and clean from outliers before compute the statistic',
+                        required=False, default=None)
+    parser.add_argument('-bands', type=str, help='Band or bands to process, e.g. 1,2,3', required=True)
+    parser.add_argument('-nodata', type=float, required=False, default=None,
+                        help='Input pixel value to treat as nodata, int or float')
+    parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
+                        default=os.getcwd())
+    parser.add_argument('-ot', type=str, dest='output_type', help='Output data type for results', required=False,
+                        choices=('byte', 'uint16', 'uint32', 'int16', 'int32', 'float32', 'float64'))
+    parser.add_argument('-p', type=int, default=cpu_count() - 1,
+                        help='Number of process', required=False)
+    parser.add_argument('-chunks', type=int, default=1000,
+                        help='Chunks size for parallel process', required=False)
+    parser.add_argument('-start', type=date_validator, dest='start_date',
+                        help='Initial date for filter data, format YYYY-MM-DD', required=False)
+    parser.add_argument('-end', type=date_validator, dest='end_date',
+                        help='End date for filter data, format YYYY-MM-DD', required=False)
+    parser.add_argument('inputs', type=str, help='Directories or images files to process', nargs='*')
+
+    args = parser.parse_args()
+
+    run(args.stat, args.preproc, args.bands, args.nodata, args.output, args.output_type, args.p, args.chunks,
+        args.start_date, args.end_date, args.inputs)
+
+
+if __name__ == '__main__':
+    cli()
