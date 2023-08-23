@@ -27,6 +27,11 @@ from osgeo import gdal, osr
 from dask.diagnostics import ProgressBar
 warnings.filterwarnings('ignore')
 
+# add project dir to pythonpath
+project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+if project_dir not in os.sys.path:
+    os.sys.path.append(project_dir)
+
 from stack_composed import header
 from stack_composed.image import Image
 from stack_composed.stats import statistic

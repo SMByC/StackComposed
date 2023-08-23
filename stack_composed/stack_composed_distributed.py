@@ -14,13 +14,18 @@
 # systemctl status firewalld
 # systemctl stop firewalld
 
+import os
 from dask.distributed import Client, SSHCluster
 
+# add project dir to pythonpath
+project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+if project_dir not in os.sys.path:
+    os.sys.path.append(project_dir)
+
 # get the password from environment variable
-import os
 password = os.environ.get('PASSWORD')
 
-from stack_composed import stack_composed
+from stack_composed import stack_composed_main
 
 # Create a list of addresses for your servers
 addresses = ['192.168.106.12', '192.168.106.13']
@@ -39,7 +44,7 @@ cluster = SSHCluster(addresses, connect_options=connect_options, worker_options=
 client = Client(cluster)
 
 # Perform computations using the Dask client
-stack_composed.cli()
+stack_composed_main.cli()
 
 # Close the client and cluster when done
 client.close()
