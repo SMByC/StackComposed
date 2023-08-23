@@ -245,7 +245,7 @@ class BlockCalculator:
 
         chunks_data = self._prepare_data(xc, yc, xc_size, yc_size)
 
-        if chunks_data.size == 0:
+        if not chunks_data.size:
             return np.full((yc_size, xc_size), np.nan)
 
         metadata = self._prepare_metadata()
