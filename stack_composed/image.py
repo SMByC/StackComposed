@@ -108,32 +108,28 @@ class Image:
         if xc_max <= self.xi_min or xc_min >= self.xi_max or yc_max <= self.yi_min or yc_min >= self.yi_max:
             return None
 
-        # Calculate the overlapping region between chunk and wrapper
-        x_start = max(xc_min, self.xi_min)
-        x_end = min(xc_max, self.xi_max)
-        y_start = max(yc_min, self.yi_min)
-        y_end = min(yc_max, self.yi_max)
-
-        # Calculate the offset and size for the get_chunk function
-        xoff = max(0, x_start - self.xi_min)
-        xsize = x_end - x_start
-        yoff = max(0, y_start - self.yi_min)
-        ysize = y_end - y_start
-
-        # Get the chunk data from the main get_chunk function
-        chunk_data = self.get_chunk(band, xoff, xsize, yoff, ysize)
-
-        # Create a nan-filled chunk matrix
+        # initialize the chunk with a nan matrix
         chunk_matrix = np.full((yc_size, xc_size), np.nan)
 
-        # Calculate the fill bounds within the chunk_matrix
-        fill_x_start = max(0, xc_min - x_start)
-        fill_x_end = min(xc_size, xc_max - x_start)
-        fill_y_start = max(0, yc_min - y_start)
-        fill_y_end = min(yc_size, yc_max - y_start)
+        # set bounds for get the array chunk in image
+        xoff = 0 if xc_min <= self.xi_min else xc_min - self.xi_min
+        xsize = xc_max - self.xi_min if xc_min <= self.xi_min else self.xi_max - xc_min
+        yoff = 0 if yc_min <= self.yi_min else yc_min - self.yi_min
+        ysize = yc_max - self.yi_min if yc_min <= self.yi_min else self.yi_max - yc_min
 
-        # Fill the overlapping region with the chunk data
-        chunk_matrix[fill_y_start:fill_y_end, fill_x_start:fill_x_end] = \
-            chunk_data[fill_y_start:fill_y_end, fill_x_start:fill_x_end]
+        # adjust to maximum size with respect to chunk or/and image
+        xsize = xc_size if xsize > xc_size else xsize
+        xsize = self.xi_max - self.xi_min if xsize > self.xi_max - self.xi_min else xsize
+        ysize = yc_size if ysize > yc_size else ysize
+        ysize = self.yi_max - self.yi_min if ysize > self.yi_max - self.yi_min else ysize
+
+        # set bounds for fill in chunk matrix
+        x_min = self.xi_min - xc_min if xc_min <= self.xi_min else 0
+        x_max = x_min + xsize if x_min + xsize < xc_max else xc_max
+        y_min = self.yi_min - yc_min if yc_min <= self.yi_min else 0
+        y_max = y_min + ysize if y_min + ysize < yc_max else yc_max
+
+        # fill with the chunk data of the image in the corresponding position
+        chunk_matrix[y_min:y_max, x_min:x_max] = self.get_chunk(band, xoff, xsize, yoff, ysize)
 
         return chunk_matrix
