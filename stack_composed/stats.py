@@ -181,7 +181,7 @@ class BlockCalculator:
     def _preprocess(self, chunks):
 
         if self.prep_func is None:
-            return np.array(chunks)
+            return chunks
 
         if self.prep_func.startswith('less_than_'):
             threshold = int(self.prep_func.split('_')[2])
@@ -224,18 +224,27 @@ class BlockCalculator:
 
     def _prepare_data(self, xc, yc, xc_size, yc_size):
         # get chunks
-        chunks = [image.get_chunk_in_wrapper(self.band, xc, xc_size, yc, yc_size) for image in self.images]
+        chunks = np.array([image.get_chunk_in_wrapper(self.band, xc, xc_size, yc, yc_size) for image in self.images], dtype=object)
+
+        # clean empty chunks and stack it
+        self.mask_none = [False if chunk is None else True for chunk in chunks]
+        chunks_masked = chunks[self.mask_none]
+        if chunks_masked.size != 0:
+            chunks_stack = np.stack(chunks[self.mask_none], axis=2).astype(float)
+        else:
+            return np.array(np.nan)
+
         # preprocess
-        chunks_data = self._preprocess(chunks)
+        chunks_data = self._preprocess(chunks_stack)
 
         return chunks_data
 
     def _prepare_metadata(self):
         metadata = {}
         if self.stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
-            metadata["date"] = np.array([image.date for image in self.images])
+            metadata["date"] = np.array([image.date for image in self.images])[self.mask_none]
         if self.stat in ["jday_last_pixel", "jday_median"]:
-            metadata["jday"] = np.array([image.jday for image in self.images])
+            metadata["jday"] = np.array([image.jday for image in self.images])[self.mask_none]
         return metadata
 
     def calculate(self, block, block_id, chunksize):
@@ -245,12 +254,11 @@ class BlockCalculator:
 
         chunks_data = self._prepare_data(xc, yc, xc_size, yc_size)
 
-        if chunks_data is None or chunks_data.size == 0 or np.all([chunk is None for chunk in chunks_data]):
+        if np.all(np.isnan(chunks_data)):
             return np.full((yc_size, xc_size), np.nan)
 
         metadata = self._prepare_metadata()
 
-        _stack = np.stack(chunks_data, axis=2)
-        return self.stat_func(_stack, metadata)
+        return self.stat_func(chunks_data, metadata)
 
 
