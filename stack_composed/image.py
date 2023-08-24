@@ -42,7 +42,7 @@ class Image:
         self.n_bands = self.gdal_file.RasterCount
         # no data values
         self.nodata_from_arg = None
-        self.nodata_from_file = [self.gdal_file.GetRasterBand(i).GetNoDataValue() for i in range(1, self.n_bands + 1)]
+        self.nodata_from_file = {band: self.gdal_file.GetRasterBand(band).GetNoDataValue() for band in range(1, self.n_bands + 1)}
         # projection
         if Image.projection is None:
             Image.projection = self.gdal_file.GetProjectionRef()
