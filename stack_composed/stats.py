@@ -158,6 +158,30 @@ def statistic(stat, preproc, images, band, num_process, chunksize):
             index_sort = np.argsort(metadata['date'])  # from the oldest to most recent
             return np.apply_along_axis(linear_trend, 2, stack_chunk, index_sort, metadata['date'])
 
+    import os
+    from dask.distributed import Client, SSHCluster
+
+    # get the password from environment variable
+    password = os.environ.get('PASSWORD')
+
+    from stack_composed import stack_composed_main
+
+    # Create a list of addresses for your servers
+    addresses = ['192.168.106.12', '192.168.106.13']
+
+    # Specify SSH keys and other SSH settings
+    connect_options = {
+        'username': 'smbyc',
+        'password': password,
+        'known_hosts': None
+    }
+
+    # Create an SSHCluster instance
+    cluster = SSHCluster(addresses, connect_options=connect_options, worker_options={"nthreads": 30, "n_workers": 2}, )
+
+    # Connect to the cluster
+    client = Client(cluster)
+
     # Create an instance of BlockCalculator
     block_calculator = BlockCalculator(images, band, stat, stat_func, preproc)
 
@@ -165,6 +189,10 @@ def statistic(stat, preproc, images, band, num_process, chunksize):
     map_blocks = da.map_blocks(block_calculator.calculate, wrapper_array,
                                chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
     result_array = map_blocks.compute(num_workers=num_process, scheduler="processes")
+
+    # Close the client and cluster when done
+    client.close()
+    cluster.close()
 
     return result_array
 
