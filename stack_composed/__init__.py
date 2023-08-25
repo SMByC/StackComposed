@@ -1,6 +1,6 @@
 
 
-__version__ = '23.8'  # year.month.revision
+__version__ = '23.8.1'  # year.month.revision
 
 
 header = \
