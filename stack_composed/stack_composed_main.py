@@ -74,58 +74,6 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
             print("the trim_mean_LL_UL must ends with a valid limits, e.g. trim_mean_10_80")
             return
 
-    # check preprocessing options
-    if preproc is not None:
-        if not preproc.startswith(('less_than_', 'greater_than_', 'between_', 'percentile_')) and \
-            not preproc.endswith(('_std_devs', '_IQR')):
-            print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-            print("choose from: less_than_NN, greater_than_NN, between_LL_UL, percentile_LL_UL, NN_std_devs, NN_IQR")
-            return
-        if preproc.startswith('less_than_'):
-            try:
-                int(preproc.split('_')[2])
-            except:
-                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-                print("the less_than_NN must ends with a valid number, e.g. less_than_1000")
-                return
-        if preproc.startswith('greater_than_'):
-            try:
-                int(preproc.split('_')[2])
-            except:
-                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-                print("the greater_than_NN must ends with a valid number, e.g. greater_than_0")
-                return
-        if preproc.startswith('between_'):
-            try:
-                int(preproc.split('_')[1])
-                int(preproc.split('_')[2])
-            except:
-                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-                print("the between_LL_UL must ends with a valid limits, e.g. between_0_1000")
-                return
-        if preproc.startswith('percentile_'):
-            try:
-                int(preproc.split('_')[1])
-                int(preproc.split('_')[2])
-            except:
-                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-                print("the percentile_LL_UL must ends with a valid limits, e.g. percentile_10_90")
-                return
-        if preproc.endswith('_std_devs'):
-            try:
-                float(preproc.split('_')[0])
-            except:
-                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-                print("the NN_std_devs must starts with a valid number, e.g. 2.5_std_devs")
-                return
-        if preproc.endswith('_IQR'):
-            try:
-                float(preproc.split('_')[0])
-            except:
-                print("\nError: argument '-preproc' invalid choice: {}".format(preproc))
-                print("the NN_IQR must starts with a valid number, e.g. 1.5_IQR")
-                return
-
     print("\nLoading and prepare images in path(s):", flush=True)
     # search all Image files in inputs recursively if the files are in directories
     images_files = []
@@ -332,8 +280,48 @@ def cli():
             msg = "not a valid date: '{0}'".format(s)
             raise argparse.ArgumentTypeError(msg)
 
+    def preproc_validator(preproc):
+        try:
+            return float(preproc)
+        except ValueError:
+            if preproc.startswith('percentile_'):
+                try:
+                    int(preproc.split('_')[1])
+                    int(preproc.split('_')[2])
+                except:
+                    msg = f"{preproc}, the percentile_LL_UL must ends with a valid limits, e.g. percentile_10_90"
+                    raise argparse.ArgumentTypeError(msg)
+            if preproc.endswith('_std_devs'):
+                try:
+                    float(preproc.split('_')[0])
+                except:
+                    msg = f"{preproc}, the NN_std_devs must starts with a valid number, e.g. 2.5_std_devs"
+                    raise argparse.ArgumentTypeError(msg)
+
+            if preproc.endswith('_IQR'):
+                try:
+                    float(preproc.split('_')[0])
+                except:
+                    msg = f"{preproc}, the NN_IQR must starts with a valid number, e.g. 1.5_IQR"
+                    raise argparse.ArgumentTypeError(msg)
+            def split_condition(str_cond):
+                str_cond = str_cond.strip().replace(" ", "")
+                if str_cond[1] == "=":
+                    return [str_cond[0:2], float(str_cond[2::])]
+                else:
+                    return [str_cond[0:1], float(str_cond[1::])]
+            try:
+                if "and" in preproc:
+                    conditions = [split_condition(str_cond) for str_cond in preproc.split("and")]
+                    return conditions
+                else:
+                    return [split_condition(preproc)]
+            except:
+                msg = "not a valid condition to define the preprocessing: '{0}'".format(preproc)
+                raise argparse.ArgumentTypeError(msg)
+
     parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True)
-    parser.add_argument('-preproc', type=str, dest='preproc',
+    parser.add_argument('-preproc', type=preproc_validator, dest='preproc',
                         help='Preprocessing function to define the valid data and clean from outliers before compute the statistic',
                         required=False, default=None)
     parser.add_argument('-bands', type=str, help='Band or bands to process, e.g. 1,2,3', required=True)

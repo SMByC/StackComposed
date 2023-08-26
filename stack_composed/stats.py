@@ -183,44 +183,33 @@ class BlockCalculator:
         if self.prep_func is None:
             return chunks
 
-        if self.prep_func.startswith('less_than_'):
-            threshold = int(self.prep_func.split('_')[2])
-            mask = np.array([chunk < threshold for chunk in chunks])
-            chunks_data = np.where(mask, chunks, np.nan)
-            return chunks_data
-
-        if self.prep_func.startswith('greater_than_'):
-            threshold = int(self.prep_func.split('_')[2])
-            mask = np.array([chunk > threshold for chunk in chunks])
-            chunks_data = np.where(mask, chunks, np.nan)
-            return chunks_data
-
-        if self.prep_func.startswith('between_'):
-            lower = int(self.prep_func.split('_')[1])
-            upper = int(self.prep_func.split('_')[2])
-            mask = np.array([np.logical_and(chunk >= lower, chunk <= upper) for chunk in chunks])
-            chunks_data = np.where(mask, chunks, np.nan)
-            return chunks_data
+        if isinstance(self.prep_func, list):
+            for condition in self.prep_func:
+                operator, threshold = condition[0], condition[1]
+                eval_string = f'chunks {operator} {threshold}'
+                mask = eval(eval_string)
+                chunks = np.where(mask, chunks, np.nan)
+            return chunks
 
         if self.prep_func.startswith('percentiles_'):
             lower = int(self.prep_func.split('_')[1])
             upper = int(self.prep_func.split('_')[2])
             mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, lower), chunk <= np.nanpercentile(chunk, upper)) for chunk in chunks])
-            chunks_data = np.where(mask, chunks, np.nan)
-            return chunks_data
+            chunks = np.where(mask, chunks, np.nan)
+            return chunks
 
         if self.prep_func.endswith('_std_devs'):
             N = float(self.prep_func.split('_')[0])
             mask = np.array([np.logical_and(chunk >= np.nanmean(chunk) - N * np.nanstd(chunk), chunk <= np.nanmean(chunk) + N * np.nanstd(chunk)) for chunk in chunks])
-            chunks_data = np.where(mask, chunks, np.nan)
-            return chunks_data
+            chunks = np.where(mask, chunks, np.nan)
+            return chunks
 
         if self.prep_func.endswith('_IQR'):
             # outliers using N interquartile range (IQR)
             N = float(self.prep_func.split('_')[0])
             mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, 25) - N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25)), chunk <= np.nanpercentile(chunk, 75) + N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25))) for chunk in chunks])
-            chunks_data = np.where(mask, chunks, np.nan)
-            return chunks_data
+            chunks = np.where(mask, chunks, np.nan)
+            return chunks
 
     def _prepare_data(self, xc, yc, xc_size, yc_size):
         # get chunks

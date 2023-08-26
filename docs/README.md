@@ -120,13 +120,8 @@ stack-composed -stat STAT -preproc PREPROC -bands BANDS [-p P] [-chunks CHUNKS] 
 - `-preproc` PREPROC (optional)
     - pre-processing the input data to define the valid data and clean from outliers before compute the statistic
     - preprocesing options:
-        - `less_than_NN`: define the valid data less than NN value and remove outside this limit, for example, for
-          define the valid data less than 1000 put "less_than_1000"
-        - `greater_than_NN`: define the valid data greater than NN value and remove outside this limit, for example, for
-          define the valid data greater than 0 put "greater_than_0"
-        - `between_LL_UL`: define the valid data between LL and UL values and remove outside this limit, for example,
-          for
-          define the valid data between 0 and 1000 put "between_0_1000"
+        - `>N` `>=N` `<N` `<=N`: conditionals, e.g. ">0" (remember, here you are defining the valid data)
+        - `>A and <B`: between conditionals, e.g. ">0 and <=1000" (`or` is not supported)
         - `percentile_LL_UL`: define the valid data between the percentile LL and UL values and remove outside this
           limit,
           for example, for define the valid data between the percentile 25 and 75 put "percentile_25_75"
@@ -135,7 +130,7 @@ stack-composed -stat STAT -preproc PREPROC -bands BANDS [-p P] [-chunks CHUNKS] 
           deviations put "2.5_std_devs"
         - `NN_IQR`: define the valid data between the NN IQR (interquartile range) and remove outside this limit,
           for example, for define the valid data between the 1.5 IQR put "1.5_IQR"
-    - example: -preproc less_than_1000
+    - example: -preproc ">0 and <=1000"
   
 - `-bands` BANDS (required)
     - band or bands to process
