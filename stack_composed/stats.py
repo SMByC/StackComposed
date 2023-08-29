@@ -196,7 +196,7 @@ class BlockCalculator:
                 return chunks
             return preproc_function
 
-        if self.preproc_arg.startswith('percentiles_'):
+        if self.preproc_arg.startswith('percentile_'):
             def preproc_function(chunks):
                 lower = int(self.preproc_arg.split('_')[1])
                 upper = int(self.preproc_arg.split('_')[2])
