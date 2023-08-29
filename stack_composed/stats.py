@@ -171,45 +171,62 @@ def statistic(stat, preproc, images, band, num_process, chunksize):
 
 class BlockCalculator:
     """Compute the statistical for the respective chunk"""
-    def __init__(self, images, band, stat, stat_func, prep_func):
+    def __init__(self, images, band, stat, stat_func, preproc_arg):
         self.images = images
         self.band = band
         self.stat_func = stat_func
         self.stat = stat
-        self.prep_func = prep_func
+        self.preproc_arg = preproc_arg
+        self.preproc_func = self._setup_preprocess()
+
+    def _setup_preprocess(self):
+
+        if self.preproc_arg is None:
+            def preproc_function(chunks):
+                return chunks
+            return preproc_function
+
+        if isinstance(self.preproc_arg, list):
+            def preproc_function(chunks):
+                for condition in self.preproc_arg:
+                    operator, threshold = condition[0], condition[1]
+                    eval_string = f'chunks {operator} {threshold}'
+                    mask = eval(eval_string)
+                    chunks = np.where(mask, chunks, np.nan)
+                return chunks
+            return preproc_function
+
+        if self.preproc_arg.startswith('percentiles_'):
+            def preproc_function(chunks):
+                lower = int(self.preproc_arg.split('_')[1])
+                upper = int(self.preproc_arg.split('_')[2])
+                mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, lower),
+                                                chunk <= np.nanpercentile(chunk, upper)) for chunk in chunks])
+                chunks = np.where(mask, chunks, np.nan)
+                return chunks
+            return preproc_function
+
+        if self.preproc_arg.endswith('_std_devs'):
+            def preproc_function(chunks):
+                N = float(self.preproc_arg.split('_')[0])
+                mask = np.array([np.logical_and(chunk >= np.nanmean(chunk) - N * np.nanstd(chunk),
+                                                chunk <= np.nanmean(chunk) + N * np.nanstd(chunk)) for chunk in chunks])
+                chunks = np.where(mask, chunks, np.nan)
+                return chunks
+            return preproc_function
+
+        if self.preproc_arg.endswith('_IQR'):
+            def preproc_function(chunks):
+                # outliers using N interquartile range (IQR)
+                N = float(self.preproc_arg.split('_')[0])
+                mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, 25) - N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25)),
+                                                chunk <= np.nanpercentile(chunk, 75) + N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25))) for chunk in chunks])
+                chunks = np.where(mask, chunks, np.nan)
+                return chunks
+            return preproc_function
 
     def _preprocess(self, chunks):
-
-        if self.prep_func is None:
-            return chunks
-
-        if isinstance(self.prep_func, list):
-            for condition in self.prep_func:
-                operator, threshold = condition[0], condition[1]
-                eval_string = f'chunks {operator} {threshold}'
-                mask = eval(eval_string)
-                chunks = np.where(mask, chunks, np.nan)
-            return chunks
-
-        if self.prep_func.startswith('percentiles_'):
-            lower = int(self.prep_func.split('_')[1])
-            upper = int(self.prep_func.split('_')[2])
-            mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, lower), chunk <= np.nanpercentile(chunk, upper)) for chunk in chunks])
-            chunks = np.where(mask, chunks, np.nan)
-            return chunks
-
-        if self.prep_func.endswith('_std_devs'):
-            N = float(self.prep_func.split('_')[0])
-            mask = np.array([np.logical_and(chunk >= np.nanmean(chunk) - N * np.nanstd(chunk), chunk <= np.nanmean(chunk) + N * np.nanstd(chunk)) for chunk in chunks])
-            chunks = np.where(mask, chunks, np.nan)
-            return chunks
-
-        if self.prep_func.endswith('_IQR'):
-            # outliers using N interquartile range (IQR)
-            N = float(self.prep_func.split('_')[0])
-            mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, 25) - N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25)), chunk <= np.nanpercentile(chunk, 75) + N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25))) for chunk in chunks])
-            chunks = np.where(mask, chunks, np.nan)
-            return chunks
+        return self.preproc_func(chunks)
 
     def _prepare_data(self, xc, yc, xc_size, yc_size):
         # get chunks
