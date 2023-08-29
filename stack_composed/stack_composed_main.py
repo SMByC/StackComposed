@@ -288,12 +288,14 @@ def cli():
                 try:
                     int(preproc.split('_')[1])
                     int(preproc.split('_')[2])
+                    return preproc
                 except:
                     msg = f"{preproc}, the percentile_LL_UL must ends with a valid limits, e.g. percentile_10_90"
                     raise argparse.ArgumentTypeError(msg)
             if preproc.endswith('_std_devs'):
                 try:
                     float(preproc.split('_')[0])
+                    return preproc
                 except:
                     msg = f"{preproc}, the NN_std_devs must starts with a valid number, e.g. 2.5_std_devs"
                     raise argparse.ArgumentTypeError(msg)
@@ -301,6 +303,7 @@ def cli():
             if preproc.endswith('_IQR'):
                 try:
                     float(preproc.split('_')[0])
+                    return preproc
                 except:
                     msg = f"{preproc}, the NN_IQR must starts with a valid number, e.g. 1.5_IQR"
                     raise argparse.ArgumentTypeError(msg)
