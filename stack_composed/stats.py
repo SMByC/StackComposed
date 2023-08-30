@@ -197,32 +197,35 @@ class BlockCalculator:
             return preproc_function
 
         if self.preproc_arg.startswith('percentile_'):
+            def percentile(pixel_ts, lower, upper):
+                mask = np.logical_and(pixel_ts >= np.nanpercentile(pixel_ts, lower),
+                                      pixel_ts <= np.nanpercentile(pixel_ts, upper))
+                return np.where(mask, pixel_ts, np.nan)
             def preproc_function(chunks):
                 lower = int(self.preproc_arg.split('_')[1])
                 upper = int(self.preproc_arg.split('_')[2])
-                mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, lower),
-                                                chunk <= np.nanpercentile(chunk, upper)) for chunk in chunks])
-                chunks = np.where(mask, chunks, np.nan)
-                return chunks
+                return np.apply_along_axis(percentile, 2, chunks, lower, upper)
             return preproc_function
 
         if self.preproc_arg.endswith('_std_devs'):
+            def std_devs(pixel_ts, N):
+                mask = np.logical_and(pixel_ts >= np.nanmean(pixel_ts) - N * np.nanstd(pixel_ts),
+                                      pixel_ts <= np.nanmean(pixel_ts) + N * np.nanstd(pixel_ts))
+                return np.where(mask, pixel_ts, np.nan)
             def preproc_function(chunks):
                 N = float(self.preproc_arg.split('_')[0])
-                mask = np.array([np.logical_and(chunk >= np.nanmean(chunk) - N * np.nanstd(chunk),
-                                                chunk <= np.nanmean(chunk) + N * np.nanstd(chunk)) for chunk in chunks])
-                chunks = np.where(mask, chunks, np.nan)
-                return chunks
+                return np.apply_along_axis(std_devs, 2, chunks, N)
             return preproc_function
 
         if self.preproc_arg.endswith('_IQR'):
-            def preproc_function(chunks):
+            def IQR(pixel_ts, N):
                 # outliers using N interquartile range (IQR)
+                mask = np.logical_and(pixel_ts >= np.nanpercentile(pixel_ts, 25) - N * (np.nanpercentile(pixel_ts, 75) - np.nanpercentile(pixel_ts, 25)),
+                                      pixel_ts <= np.nanpercentile(pixel_ts, 75) + N * (np.nanpercentile(pixel_ts, 75) - np.nanpercentile(pixel_ts, 25)))
+                return np.where(mask, pixel_ts, np.nan)
+            def preproc_function(chunks):
                 N = float(self.preproc_arg.split('_')[0])
-                mask = np.array([np.logical_and(chunk >= np.nanpercentile(chunk, 25) - N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25)),
-                                                chunk <= np.nanpercentile(chunk, 75) + N * (np.nanpercentile(chunk, 75) - np.nanpercentile(chunk, 25))) for chunk in chunks])
-                chunks = np.where(mask, chunks, np.nan)
-                return chunks
+                return np.apply_along_axis(IQR, 2, chunks, N)
             return preproc_function
 
     def _preprocess(self, chunks):
