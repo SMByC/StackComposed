@@ -14,6 +14,11 @@
 # systemctl status firewalld
 # systemctl stop firewalld
 
+# setting up PYTHONPATH
+# .bashrc
+# export PYTHONPATH=$PYTHONPATH:/opt/smbyc/stack-composed
+
+
 import os
 from dask.distributed import Client, SSHCluster
 
