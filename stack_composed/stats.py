@@ -54,6 +54,11 @@ def statistic(stat, preproc, images, band, num_process, chunksize):
             gmean[gmean == 1] = np.nan
             return gmean
 
+    # Compute the sum of the pixels values
+    if stat == 'sum':
+        def stat_func(stack_chunk, metadata):
+            return np.nansum(stack_chunk, axis=2)
+
     # Compute the maximum value
     if stat == 'max':
         def stat_func(stack_chunk, metadata):

@@ -97,6 +97,7 @@ stack-composed -stat STAT -preproc PREPROC -bands BANDS [-p P] [-chunks CHUNKS] 
         - `median`: compute the median
         - `mean`: compute the arithmetic mean
         - `gmean`: compute the geometric mean, that is the n-th root of (x1 * x2 * ... * xn)
+        - `sum`: compute the sum of the pixel values
         - `max`: compute the maximum value
         - `min`: compute the minimum value
         - `std`: compute the standard deviation
