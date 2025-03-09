@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2016-2023 Xavier C. Llano, SMBYC
+#  Copyright (C) 2016-2025 Xavier C. Llano, SMBYC
 #  Email: xavier.corredor.llano@gmail.com
 #
 #  This program is free software: you can redistribute it and/or modify

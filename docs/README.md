@@ -121,7 +121,7 @@ stack-composed -stat STAT -preproc PREPROC -bands BANDS [-p P] [-chunks CHUNKS] 
 - `-preproc` PREPROC (optional)
     - pre-processing the input data to define the valid data and clean from outliers before compute the statistic
     - preprocesing options:
-        - `>N` `>=N` `<N` `<=N`: conditionals, e.g. ">0" (remember, here you are defining the valid data)
+        - `>N` `>=N` `<N` `<=N` `==N`: conditionals, e.g. ">0" (remember, here you are defining the valid data)
         - `>A and <B`: between conditionals, e.g. ">0 and <=1000" (`or` is not supported)
         - `percentile_LL_UL`: define the valid data between the percentile LL and UL values and remove outside this
           limit,
