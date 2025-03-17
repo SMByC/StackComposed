@@ -218,8 +218,17 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         # create output raster
         driver = gdal.GetDriverByName('GTiff')
         nbands = 1
+
+        # Define creation options for BigTIFF, compression and tiling
+        creation_options = [
+            "BIGTIFF=YES",  # Enable BigTIFF
+            "COMPRESS=LZW",  # Optional: Use LZW compression to reduce file size
+            "TILED=YES"  # Optional: Use tiled format for better performance with large files
+        ]
+
         outRaster = driver.Create(output_filename, Image.wrapper_shape[1], Image.wrapper_shape[0],
-                                  nbands, gdal_output_type)
+                                  nbands, gdal_output_type, options=creation_options)
+
         outband = outRaster.GetRasterBand(nbands)
 
         # set the nodata to the output file
