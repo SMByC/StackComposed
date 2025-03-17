@@ -222,7 +222,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         # Define creation options for BigTIFF, compression and tiling
         creation_options = [
             "BIGTIFF=YES",  # Enable BigTIFF
-            "COMPRESS=LZW",  # Optional: Use LZW compression to reduce file size
+            # "COMPRESS=LZW",  # Optional: Use LZW compression to reduce file size
             "TILED=YES"  # Optional: Use tiled format for better performance with large files
         ]
 
