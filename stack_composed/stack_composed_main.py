@@ -241,7 +241,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         else:
             # set the nodata based on the input files
             nodata_from_file = set([image.nodata_from_file[band] for image in images])
-            if len(nodata_from_file) == 1:
+            if len(nodata_from_file) == 1 and None not in nodata_from_file:
                 outband.SetNoDataValue(nodata_from_file.pop())
             elif None not in nodata_from_file:
                 print("\nWarning: the nodata value is not set to the output file "
