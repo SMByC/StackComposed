@@ -185,21 +185,25 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
 
         # choose the default data type based on the statistic
         if output_type is None:
-            if stat in ['median', 'mean', 'gmean', 'sum', 'max', 'min', 'last_pixel', 'jday_last_pixel',
-                        'jday_median'] or stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
-                output_dtype = np.uint16
-            if stat in ['std', 'snr']:
-                output_dtype = np.float32
+            # data types for the input images
+            data_type = set([image.data_type[band] for image in images]).pop()
+
+            if stat in ['sum', 'max', 'min', 'last_pixel']:
+                output_type = data_type
+            if stat in ['jday_last_pixel', 'jday_median']:
+                output_type = np.uint8
+            if stat in ['median', 'mean', 'gmean', 'std', 'snr'] or stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
+                if data_type in ['float64']:
+                    output_type = np.float64
+                else:
+                    output_type = np.float32
             if stat in ['valid_pixels']:
                 if len(images) < 256:
-                    output_dtype = np.uint8
+                    output_type = np.uint8
                 else:
-                    output_dtype = np.uint16
+                    output_type = np.uint16
             if stat in ['linear_trend']:
-                    output_dtype = np.int32
-
-        for image in images:
-            image.output_type = output_type
+                output_type = np.int32
 
         # set the nodata to the output file
         if nodata is not None:
@@ -218,7 +222,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         # create the raterio profile for the output file
         profile = {
             'driver': 'GTiff',
-            'dtype': 'uint16',
+            'dtype': output_type,
             'height': Image.wrapper_shape[0],
             'width': Image.wrapper_shape[1],
             'count': 1,
@@ -324,7 +328,7 @@ def cli():
     parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
                         default=os.getcwd())
     parser.add_argument('-ot', type=str, dest='output_type', help='Output data type for results', required=False,
-                        choices=('int8', 'uint16', 'uint32', 'uint64', 'int16', 'int32', 'int64', 'float16', 'float32', 'float64'))
+                        choices=('int8', 'uint16', 'uint32', 'int16', 'int32', 'float32', 'float64'))
     parser.add_argument('-p', type=int, default=cpu_count() - 1,
                         help='Number of process', required=False)
     parser.add_argument('-chunks', type=int, default=1000,

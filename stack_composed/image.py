@@ -49,8 +49,8 @@ class Image:
             # projection
             if Image.projection is None:
                 Image.projection = src.crs
-            # output type
-            self.output_type = None
+            # data type from source
+            self.data_type = {band: src.dtypes[band - 1] for band in range(1, self.n_bands + 1)}
 
     @staticmethod
     def get_dataset_path(file_path):
