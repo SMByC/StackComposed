@@ -226,7 +226,6 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
             'height': Image.wrapper_shape[0],
             'width': Image.wrapper_shape[1],
             'count': 1,
-            'compress': 'lzw',
             'BIGTIFF': 'IF_NEEDED',
             'tiled': True,
             'blockxsize': 256,
