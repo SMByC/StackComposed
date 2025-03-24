@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+ulimit -n 65536
+ulimit -s unlimited
+
 # run script in Linux environment
 SOURCE=$(dirname $(dirname "${BASH_SOURCE[0]}"))
 exec python3 "$SOURCE/stack_composed/stack_composed_main.py" "$@"
