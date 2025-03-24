@@ -20,10 +20,9 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
-import gc
 import warnings
 import numpy as np
-from osgeo import gdal, osr
+import rasterio
 from dask.diagnostics import ProgressBar
 warnings.filterwarnings('ignore')
 
@@ -94,7 +93,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         bands = [int(b) for b in bands.split(',')]
 
     # load images
-    images = [Image(landsat_file) for landsat_file in images_files]
+    images = [Image(img) for img in images_files]
 
     # filter images based on the start date and/or end date, required filename as metadata
     if start_date is not None or end_date is not None:
@@ -170,97 +169,80 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
     for band in bands:
         # check and set the output file before process
         if os.path.isdir(output):
-            output_filename = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
+            output_file = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
         elif output.endswith((".tif", ".TIF")) and os.path.isdir(os.path.dirname(output)):
-            output_filename = output
+            output_file = output
         elif output.endswith((".tif", ".TIF")) and os.path.dirname(output) == '':
-            output_filename = os.path.join(os.getcwd(), output)
+            output_file = os.path.join(os.getcwd(), output)
         else:
             print("\nError: Setting the output filename, wrong directory and/or\n"
                   "       filename: {}\n".format(output))
             exit(1)
 
         if stat in ['linear_trend']:
-            output_filename = output_filename.replace("stack_composed_linear_trend_band",
+            output_file = output_file.replace("stack_composed_linear_trend_band",
                                                       "stack_composed_linear_trend_x1e6_band")
 
         # choose the default data type based on the statistic
         if output_type is None:
             if stat in ['median', 'mean', 'gmean', 'sum', 'max', 'min', 'last_pixel', 'jday_last_pixel',
                         'jday_median'] or stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
-                gdal_output_type = gdal.GDT_UInt16
+                output_dtype = np.uint16
             if stat in ['std', 'snr']:
-                gdal_output_type = gdal.GDT_Float32
+                output_dtype = np.float32
             if stat in ['valid_pixels']:
                 if len(images) < 256:
-                    gdal_output_type = gdal.GDT_Byte
+                    output_dtype = np.uint8
                 else:
-                    gdal_output_type = gdal.GDT_UInt16
+                    output_dtype = np.uint16
             if stat in ['linear_trend']:
-                gdal_output_type = gdal.GDT_Int32
-        else:
-            if output_type == 'byte': gdal_output_type = gdal.GDT_Byte
-            if output_type == 'uint16': gdal_output_type = gdal.GDT_UInt16
-            if output_type == 'uint32': gdal_output_type = gdal.GDT_UInt32
-            if output_type == 'int16': gdal_output_type = gdal.GDT_Int16
-            if output_type == 'int32': gdal_output_type = gdal.GDT_Int32
-            if output_type == 'float32': gdal_output_type = gdal.GDT_Float32
-            if output_type == 'float64': gdal_output_type = gdal.GDT_Float64
+                    output_dtype = np.int32
+
         for image in images:
-            image.output_type = gdal_output_type
-
-        ### process ###
-        # Calculate the statistics
-        print("\nProcessing the {} for band {}:".format(stat, band))
-        output_array = statistic(stat, preproc, images, band, num_process, chunksize)
-
-        ### save result ###
-        # create output raster
-        driver = gdal.GetDriverByName('GTiff')
-        nbands = 1
-
-        # Define creation options for BigTIFF, compression and tiling
-        creation_options = [
-            "BIGTIFF=YES",  # Enable BigTIFF
-            # "COMPRESS=LZW",  # Optional: Use LZW compression to reduce file size
-            "TILED=YES"  # Optional: Use tiled format for better performance with large files
-        ]
-
-        outRaster = driver.Create(output_filename, Image.wrapper_shape[1], Image.wrapper_shape[0],
-                                  nbands, gdal_output_type, options=creation_options)
-
-        outband = outRaster.GetRasterBand(nbands)
+            image.output_type = output_type
 
         # set the nodata to the output file
-        if stat in ['linear_trend']:
-            # convert nan value and set nodata value specific for linear trend
-            output_array[np.isnan(output_array)] = -2147483648
-            outband.SetNoDataValue(-2147483648)
-        elif nodata is not None:
-            outband.SetNoDataValue(nodata)
+        if nodata is not None:
+            output_nodata_value = nodata
         else:
             # set the nodata based on the input files
             nodata_from_file = set([image.nodata_from_file[band] for image in images])
             if len(nodata_from_file) == 1 and None not in nodata_from_file:
-                outband.SetNoDataValue(nodata_from_file.pop())
+                output_nodata_value = nodata_from_file.pop()
             elif None not in nodata_from_file:
                 print("\nWarning: the nodata value is not set to the output file "
                       "because the input files have different nodata values.\n")
+            else:
+                output_nodata_value = None
 
-        # write band
-        outband.WriteArray(output_array)
+        # create the raterio profile for the output file
+        profile = {
+            'driver': 'GTiff',
+            'dtype': 'uint16',
+            'height': Image.wrapper_shape[0],
+            'width': Image.wrapper_shape[1],
+            'count': 1,
+            'compress': 'lzw',
+            'BIGTIFF': 'IF_NEEDED',
+            'tiled': True,
+            'blockxsize': 256,
+            'blockysize': 256,
+            'nodata': output_nodata_value,
+            'crs': Image.projection,
+            'transform': rasterio.transform.from_bounds(Image.wrapper_extent[0], Image.wrapper_extent[3],
+                                                        Image.wrapper_extent[2], Image.wrapper_extent[1],
+                                                        Image.wrapper_shape[1], Image.wrapper_shape[0])
+        }
 
-        # set projection and geotransform
-        outRasterSRS = osr.SpatialReference()
-        outRasterSRS.ImportFromWkt(Image.projection)
-        outRaster.SetProjection(outRasterSRS.ExportToWkt())
-        outRaster.SetGeoTransform((Image.wrapper_extent[0], Image.wrapper_x_res, 0,
-                                   Image.wrapper_extent[1], 0, -Image.wrapper_y_res))
+        # Initialize empty TIFF file with rasterio
+        with rasterio.open(output_file, 'w+', **profile) as dst:
+            pass
 
-        # clean
-        del driver, outRaster, outband, outRasterSRS, output_array
-        # force run garbage collector to release unreferenced memory
-        gc.collect()
+        ### process ###
+
+        # Calculate the statistics
+        print("\nProcessing the {} for band {}:".format(stat, band))
+        statistic(stat, preproc, images, band, num_process, chunksize, output_file)
 
     print("\nProcess completed!")
 
@@ -342,7 +324,7 @@ def cli():
     parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
                         default=os.getcwd())
     parser.add_argument('-ot', type=str, dest='output_type', help='Output data type for results', required=False,
-                        choices=('byte', 'uint16', 'uint32', 'int16', 'int32', 'float32', 'float64'))
+                        choices=('int8', 'uint16', 'uint32', 'uint64', 'int16', 'int32', 'int64', 'float16', 'float32', 'float64'))
     parser.add_argument('-p', type=int, default=cpu_count() - 1,
                         help='Number of process', required=False)
     parser.add_argument('-chunks', type=int, default=1000,

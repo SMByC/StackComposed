@@ -19,7 +19,7 @@ Issues, ideas and enhancements: [https://github.com/SMByC/StackComposed/issues](
 The StackComposed use the following apps/libraries:
 
 * Python3
-* Gdal
+* Rasterio
 * Numpy
 * [Dask](http://dask.pydata.org)
 

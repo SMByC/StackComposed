@@ -11,7 +11,7 @@
 #
 import os
 import numpy as np
-from osgeo import gdal
+import rasterio
 
 from stack_composed.parse import parse_filename
 
@@ -28,27 +28,29 @@ class Image:
     def __init__(self, file_path):
         self.file_path = self.get_dataset_path(file_path)
         ### set geoproperties ###
-        self.gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
-        # setting the extent, pixel sizes and projection
-        min_x, x_res, x_skew, max_y, y_skew, y_res = self.gdal_file.GetGeoTransform()
-        max_x = min_x + (self.gdal_file.RasterXSize * x_res)
-        min_y = max_y + (self.gdal_file.RasterYSize * y_res)
-        # extent
-        self.extent = [min_x, max_y, max_x, min_y]
-        # pixel sizes
-        self.x_res = abs(float(x_res))
-        self.y_res = abs(float(y_res))
-        # number of bands
-        self.n_bands = self.gdal_file.RasterCount
-        # no data values
-        self.nodata_from_arg = None
-        self.nodata_from_file = {band: self.gdal_file.GetRasterBand(band).GetNoDataValue() for band in range(1, self.n_bands + 1)}
-        # projection
-        if Image.projection is None:
-            Image.projection = self.gdal_file.GetProjectionRef()
-        # output type
-        self.output_type = None
-        self.gdal_file = None
+        with rasterio.open(self.file_path) as src:
+            # setting the extent, pixel sizes and projection
+            min_x = src.transform[2]
+            x_res = src.transform[0]
+            max_y = src.transform[5]
+            y_res = src.transform[4]
+            max_x = min_x + (src.width * x_res)
+            min_y = max_y + (src.height * y_res)
+            # extent
+            self.extent = [min_x, max_y, max_x, min_y]
+            # pixel sizes
+            self.x_res = abs(float(x_res))
+            self.y_res = abs(float(y_res))
+            # number of bands
+            self.n_bands = src.count
+            # no data values
+            self.nodata_from_arg = None
+            self.nodata_from_file = {band: src.nodata for band in range(1, self.n_bands + 1)}
+            # projection
+            if Image.projection is None:
+                Image.projection = src.crs
+            # output type
+            self.output_type = None
 
     @staticmethod
     def get_dataset_path(file_path):
@@ -78,18 +80,16 @@ class Image:
         """
         Get the array of the band for the respective chunk
         """
-        if self.gdal_file is None:
-            self.gdal_file = gdal.Open(self.file_path, gdal.GA_ReadOnly)
-        raster_band = self.gdal_file.GetRasterBand(band).ReadAsArray(xoff, yoff, xsize, ysize).astype(np.float32)
 
-        # convert the no data values from file to NaN
-        if self.nodata_from_file[band] is not None:
-            nodata_mask = raster_band == self.nodata_from_file[band]
-            raster_band[nodata_mask] = np.nan
+        with rasterio.open(self.file_path) as src:
+            window = rasterio.windows.Window(xoff, yoff, xsize, ysize)
+            raster_band = src.read(band, window=window).astype(np.float32)
 
-        # convert the no data values set from arguments to NaN
-        if self.nodata_from_arg is not None and self.nodata_from_arg != self.nodata_from_file[band]:
-            nodata_mask = raster_band == self.nodata_from_arg
+        # convert the no data values from file and arguments to NaN
+        nodata_values = {self.nodata_from_file[band], self.nodata_from_arg}
+        nodata_values.discard(None)
+        if nodata_values:
+            nodata_mask = np.isin(raster_band, list(nodata_values))
             raster_band[nodata_mask] = np.nan
 
         return raster_band

@@ -11,11 +11,13 @@
 #
 import dask.array as da
 import numpy as np
+import rasterio
+from rasterio.windows import Window
 
 from stack_composed.image import Image
 
 
-def statistic(stat, preproc, images, band, num_process, chunksize):
+def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
     # create an empty initial wrapper raster for managed dask parallel
     # in chunks and storage result
     wrapper_array = da.empty(Image.wrapper_shape, chunks=chunksize)
@@ -163,25 +165,23 @@ def statistic(stat, preproc, images, band, num_process, chunksize):
             index_sort = np.argsort(metadata['date'])  # from the oldest to most recent
             return np.apply_along_axis(linear_trend, 2, stack_chunk, index_sort, metadata['date'])
 
-    # Create an instance of BlockCalculator
-    block_calculator = BlockCalculator(images, band, stat, stat_func, preproc)
-
     # Process
-    map_blocks = da.map_blocks(block_calculator.calculate, wrapper_array,
+    chunk_processor = ChunkProcessor(images, band, stat, stat_func, preproc, output_file)
+    map_blocks = da.map_blocks(chunk_processor.calculate, wrapper_array,
                                chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
-    result_array = map_blocks.compute(num_workers=num_process, scheduler="processes")
-
-    return result_array
+    map_blocks.compute(num_workers=num_process, scheduler="processes")
 
 
-class BlockCalculator:
+class ChunkProcessor:
     """Compute the statistical for the respective chunk"""
-    def __init__(self, images, band, stat, stat_func, preproc_arg):
+    def __init__(self, images, band, stat, stat_func, preproc_arg, output_file):
         self.images = images
         self.band = band
         self.stat_func = stat_func
         self.stat = stat
         self.preproc_arg = preproc_arg
+        self.output_file = output_file
+
         self.preproc_func = self._setup_preprocess()
 
     def _setup_preprocess(self):
@@ -249,9 +249,9 @@ class BlockCalculator:
             return np.array(np.nan)
 
         # preprocess
-        chunks_data = self._preprocess(chunks_stack)
+        data_chunk = self._preprocess(chunks_stack)
 
-        return chunks_data
+        return data_chunk
 
     def _prepare_metadata(self):
         metadata = {}
@@ -261,18 +261,26 @@ class BlockCalculator:
             metadata["jday"] = np.array([image.jday for image in self.images])[self.mask_none]
         return metadata
 
+    def _write_chunk(self, data_chunk, window):
+        # Write the chunk to the output file using rasterio in the correct position
+        with rasterio.open(self.output_file, 'r+') as dst:
+            dst.write(data_chunk, 1, window=Window(*window))
+
     def calculate(self, block, block_id, chunksize):
         yc = block_id[0] * chunksize
         xc = block_id[1] * chunksize
         yc_size, xc_size = block.shape
 
-        chunks_data = self._prepare_data(xc, yc, xc_size, yc_size)
+        data_chunk = self._prepare_data(xc, yc, xc_size, yc_size)
 
-        if chunks_data is None or np.all(np.isnan(chunks_data)):
+        if data_chunk is None or np.all(np.isnan(data_chunk)):
             return np.full((yc_size, xc_size), np.nan)
 
         metadata = self._prepare_metadata()
+        result_data_chunk = self.stat_func(data_chunk, metadata)
+        self._write_chunk(result_data_chunk, window=[xc, yc, xc_size, yc_size])
 
-        return self.stat_func(chunks_data, metadata)
+        return np.zeros_like(block)  # return a dummy block
+
 
 
