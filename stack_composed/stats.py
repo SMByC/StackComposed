@@ -169,7 +169,10 @@ def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
     chunk_processor = ChunkProcessor(images, band, stat, stat_func, preproc, output_file)
     map_blocks = da.map_blocks(chunk_processor.calculate, wrapper_array,
                                chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
-    map_blocks.compute(num_workers=num_process, scheduler="processes")
+    try:
+        map_blocks.compute(num_workers=num_process, scheduler="processes")
+    except IndexError:
+        pass
 
 
 class ChunkProcessor:
@@ -279,8 +282,3 @@ class ChunkProcessor:
         metadata = self._prepare_metadata()
         result_data_chunk = self.stat_func(data_chunk, metadata)
         self._write_chunk(result_data_chunk, window=[xc, yc, xc_size, yc_size])
-
-        return np.zeros_like(block)  # return a dummy block
-
-
-
