@@ -275,10 +275,9 @@ class ChunkProcessor:
         yc_size, xc_size = block.shape
 
         data_chunk = self._prepare_data(xc, yc, xc_size, yc_size)
-
         if data_chunk is None or np.all(np.isnan(data_chunk)):
-            return np.full((yc_size, xc_size), np.nan)
-
-        metadata = self._prepare_metadata()
-        result_data_chunk = self.stat_func(data_chunk, metadata)
+            result_data_chunk = np.full((yc_size, xc_size), np.nan)
+        else:
+            metadata = self._prepare_metadata()
+            result_data_chunk = self.stat_func(data_chunk, metadata)
         self._write_chunk(result_data_chunk, window=[xc, yc, xc_size, yc_size])
