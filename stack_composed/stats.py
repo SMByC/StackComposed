@@ -10,6 +10,7 @@
 #  (at your option) any later version.
 #
 import dask.array as da
+import dask
 import numpy as np
 import rasterio
 from rasterio.windows import Window
@@ -167,12 +168,17 @@ def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
 
     # Process
     chunk_processor = ChunkProcessor(images, band, stat, stat_func, preproc, output_file)
-    map_blocks = da.map_blocks(chunk_processor.calculate, wrapper_array,
-                               chunks=wrapper_array.chunks, chunksize=chunksize, dtype=float)
-    try:
-        map_blocks.compute(num_workers=num_process, scheduler="processes")
-    except IndexError:
-        pass
+    delayed_blocks = wrapper_array.to_delayed()
+    tasks = []
+
+    for i in range(delayed_blocks.shape[0]):
+        for j in range(delayed_blocks.shape[1]):
+            block = delayed_blocks[i, j]
+            block_id = (i, j)
+            task = dask.delayed(chunk_processor.calculate)(block, block_id, chunksize)
+            tasks.append(task)
+
+    dask.compute(*tasks, scheduler="processes", num_workers=num_process)
 
 
 class ChunkProcessor:
