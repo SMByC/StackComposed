@@ -9,10 +9,12 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
+import os
 import dask.array as da
 import dask
 import numpy as np
 import rasterio
+from filelock import FileLock
 from rasterio.windows import Window
 
 from stack_composed.image import Image
@@ -180,6 +182,11 @@ def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
 
     dask.compute(*tasks, scheduler="processes", num_workers=num_process)
 
+    # Clean up
+    lockfile = f"{output_file}.lock"
+    if os.path.exists(lockfile):
+        os.remove(lockfile)
+
 
 class ChunkProcessor:
     """Compute the statistical for the respective chunk"""
@@ -271,9 +278,10 @@ class ChunkProcessor:
         return metadata
 
     def _write_chunk(self, data_chunk, window):
-        # Write the chunk to the output file using rasterio in the correct position
-        with rasterio.open(self.output_file, 'r+') as dst:
-            dst.write(data_chunk, 1, window=Window(*window))
+        """Write the data chunk in the correct position with exclusive access"""
+        with FileLock(f"{self.output_file}.lock"):
+            with rasterio.open(self.output_file, 'r+') as dst:
+                dst.write(data_chunk, 1, window=Window(*window))
 
     def calculate(self, block, block_id, chunksize):
         yc = block_id[0] * chunksize
