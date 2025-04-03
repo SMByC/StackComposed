@@ -1,0 +1,6 @@
+setuptools
+numpy
+rasterio
+dask
+cloudpickle
+filelock
