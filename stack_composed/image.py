@@ -45,7 +45,7 @@ class Image:
             self.n_bands = src.count
             # no data values
             self.nodata_from_arg = None
-            self.nodata_from_file = {band: src.nodata for band in range(1, self.n_bands + 1)}
+            self.nodata_from_file = {band: src.nodatavals[band - 1] for band in range(1, self.n_bands + 1)}
             # projection
             if Image.projection is None:
                 Image.projection = src.crs
