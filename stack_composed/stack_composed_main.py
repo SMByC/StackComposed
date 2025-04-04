@@ -214,6 +214,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
             if len(nodata_from_file) == 1 and None not in nodata_from_file:
                 output_nodata_value = nodata_from_file.pop()
             elif None not in nodata_from_file:
+                output_nodata_value = None
                 print("\nWarning: the nodata value is not set to the output file "
                       "because the input files have different nodata values.\n")
             else:
