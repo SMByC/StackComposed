@@ -236,7 +236,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
         }
 
         # Initialize empty TIFF file with rasterio
-        with rasterio.open(output_file, 'w+', **profile) as dst:
+        with rasterio.open(output_file, 'w+', **profile):
             pass
 
         ### process ###
