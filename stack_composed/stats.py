@@ -62,7 +62,7 @@ def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
     # Compute the sum of the pixels values
     if stat == 'sum':
         def stat_func(stack_chunk, metadata):
-            return np.nansum(stack_chunk, axis=2)
+            return np.where(np.all(np.isnan(stack_chunk), axis=2), np.nan, np.nansum(stack_chunk, axis=2))
 
     # Compute the maximum value
     if stat == 'max':
