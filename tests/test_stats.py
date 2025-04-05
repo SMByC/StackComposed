@@ -23,7 +23,7 @@ from stack_composed.stack_composed_main import run
         ("jday_median", "data/stack_composed_jday_median_band1.tif"),
     ]
 )
-def test_statistic_operations(setup_stack_composed, stat, expected_file):
+def test_statistic(setup_stack_composed, stat, expected_file):
     # Unpack the fixture
     preproc, band, nodata, output_type, num_process, chunksize, output_file, start_date, end_date, images = setup_stack_composed
 
