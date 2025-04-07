@@ -130,6 +130,31 @@ class Image:
         y_max = y_min + ysize if y_min + ysize < yc_max else yc_max
 
         # fill with the chunk data of the image in the corresponding position
-        chunk_matrix[y_min:y_max, x_min:x_max] = self.get_chunk(band, xoff, xsize, yoff, ysize)
+        try:
+            chunk_matrix[y_min:y_max, x_min:x_max] = self.get_chunk(band, xoff, xsize, yoff, ysize)
+        except ValueError as e:
+            chunk_matrix_shape = chunk_matrix[y_min:y_max, x_min:x_max].shape
+            data_chunk = self.get_chunk(band, xoff, xsize, yoff, ysize)
+
+            if chunk_matrix_shape != data_chunk.shape:
+                # weird case where the chunk is larger than the chunk matrix
+
+                # Compute difference along each axis
+                diff_y = chunk_matrix_shape[0] - data_chunk.shape[0]
+                diff_x = chunk_matrix_shape[1] - data_chunk.shape[1]
+
+                # Pad if the data_chunk is smaller
+                if diff_y > 0 or diff_x > 0:
+                    pad_width = ((0, max(diff_y, 0)), (0, max(diff_x, 0)))
+                    data_chunk = np.pad(data_chunk, pad_width, mode='constant', constant_values=np.nan)
+                # Crop if the data_chunk is larger
+                if diff_y < 0 or diff_x < 0:
+                    data_chunk = data_chunk[:chunk_matrix_shape[0], :chunk_matrix_shape[1]]
+
+                # Fill the chunk matrix with the data_chunk
+                chunk_matrix[y_min:y_max, x_min:x_max] = data_chunk
+            else:
+                raise e
+
 
         return chunk_matrix
