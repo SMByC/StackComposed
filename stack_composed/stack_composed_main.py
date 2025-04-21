@@ -191,7 +191,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
             if stat in ['sum', 'max', 'min', 'last_pixel']:
                 output_type = data_type
             if stat in ['jday_last_pixel', 'jday_median']:
-                output_type = np.uint8
+                output_type = np.uint16
             if stat in ['median', 'mean', 'gmean', 'std', 'snr'] or stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
                 if data_type in ['float64']:
                     output_type = np.float64
