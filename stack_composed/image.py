@@ -137,7 +137,7 @@ class Image:
             data_chunk = self.get_chunk(band, xoff, xsize, yoff, ysize)
 
             if chunk_matrix_shape != data_chunk.shape:
-                # weird case where the chunk is larger than the chunk matrix
+                # weird case where the chunk is different from the chunk matrix
 
                 # Compute difference along each axis
                 diff_y = chunk_matrix_shape[0] - data_chunk.shape[0]
@@ -155,6 +155,5 @@ class Image:
                 chunk_matrix[y_min:y_max, x_min:x_max] = data_chunk
             else:
                 raise e
-
 
         return chunk_matrix
