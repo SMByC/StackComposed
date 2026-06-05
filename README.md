@@ -1,8 +1,7 @@
 <p align="center">
   <img src="img/stack_composed.svg" alt="StackComposed icon" width="96" height="96">
 </p>
-
-# StackComposed
+<h1 align="center">StackComposed</h1>
 
 StackComposed computes a per-pixel statistic over a stack of georeferenced raster images, such as a Landsat time series. Input images can cover different scenes, tiles, or partially overlapping areas. StackComposed builds one wrapper extent that covers all inputs, reads each processing tile from every image, masks nodata values as `NaN`, and writes the selected statistic to a GeoTIFF.
 
@@ -27,19 +26,19 @@ The workflow is:
 
 The wrapper extent is the minimum bounding extent that covers all input images. Output dimensions are derived from this extent and the input pixel size.
 
-![](img/wrapper_extent.png)
+<img src="img/wrapper_extent.png" height="150px" style="margin: auto;display: block;">
 
 ### Data cube by chunk
 
 For each chunk, StackComposed reads the corresponding window from every image and arranges the values as a small data cube: rows, columns, and time. The statistic is computed along the time axis for every pixel in that chunk.
 
-![](img/process.png)
+<img src="img/process.png" height="400px" style="margin: auto;display: block;">
 
 ### Local parallel processing
 
 StackComposed processes chunks in local worker processes. The main process is the only writer, which avoids concurrent writes to the output file. Use `-p 1` for single-process execution or `-p N` for local parallelism.
 
-![](img/chunks.png)
+<img src="img/chunks.png" height="150px" style="margin: auto;display: block;">
 
 Distributed execution is not available in the current release. The `stack-composed-distributed` module exits with a message explaining that the current engine uses local worker processes.
 
