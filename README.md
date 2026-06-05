@@ -1,133 +1,283 @@
+<p align="center">
+  <img src="img/stack_composed.svg" alt="StackComposed icon" width="96" height="96">
+</p>
+
 # StackComposed
 
-StackComposed computes a per-pixel statistic over a stack of georeferenced raster images (e.g. a Landsat time series). Images may span different tiles or overlap partially — StackComposed assembles them into a single wrapper extent and processes all valid observations along the time axis in parallel.
+StackComposed computes a per-pixel statistic over a stack of georeferenced raster images, such as a Landsat time series. Input images can cover different scenes, tiles, or partially overlapping areas. StackComposed builds one wrapper extent that covers all inputs, reads each processing tile from every image, masks nodata values as `NaN`, and writes the selected statistic to a GeoTIFF.
 
-Typical use case: given dozens of Landsat scenes covering an area of interest at different dates, compute the median reflectance, the date of the last cloud-free pixel, or a linear trend — all in a single command.
+Typical uses include computing median reflectance, counting valid observations, extracting the most recent valid pixel, returning the Julian day of a temporal statistic, or estimating a per-pixel linear trend from dated Landsat scenes.
 
-## Documentation
+## Core idea
 
-Full documentation: [https://smbyc.github.io/StackComposed](https://smbyc.github.io/StackComposed)
+For each output pixel, StackComposed builds a time-series from all input images that overlap that pixel. The statistic is computed along the time axis only from valid values. Pixels outside an image footprint are treated as missing values.
 
-## Source code
+The workflow is:
 
-[https://github.com/SMByC/StackComposed](https://github.com/SMByC/StackComposed)
+1. Discover input rasters from files or directories.
+2. Validate that all inputs share projection, pixel size, and pixel registration.
+3. Build the wrapper extent that covers all images.
+4. Split the wrapper into chunks.
+5. Read only the current chunk from every input image.
+6. Apply optional preprocessing filters.
+7. Compute the statistic along the time axis.
+8. Stream chunk results to the output GeoTIFF.
 
-## Issue tracker
+### Wrapper extent
 
-Bugs, ideas, and enhancements: [https://github.com/SMByC/StackComposed/issues](https://github.com/SMByC/StackComposed/issues)
+The wrapper extent is the minimum bounding extent that covers all input images. Output dimensions are derived from this extent and the input pixel size.
 
----
+![](img/wrapper_extent.png)
+
+### Data cube by chunk
+
+For each chunk, StackComposed reads the corresponding window from every image and arranges the values as a small data cube: rows, columns, and time. The statistic is computed along the time axis for every pixel in that chunk.
+
+![](img/process.png)
+
+### Local parallel processing
+
+StackComposed processes chunks in local worker processes. The main process is the only writer, which avoids concurrent writes to the output file. Use `-p 1` for single-process execution or `-p N` for local parallelism.
+
+![](img/chunks.png)
+
+Distributed execution is not available in the current release. The `stack-composed-distributed` module exits with a message explaining that the current engine uses local worker processes.
 
 ## Installation
 
-Requires the following libraries:
+StackComposed requires:
 
-- [NumPy](https://numpy.org)
-- [Rasterio](https://rasterio.readthedocs.io)
-- [Dask](https://docs.dask.org)
+- Python 3.9 or newer
+- NumPy
+- Rasterio
+- Dask
 
-**Option 1 — Conda environment:**
+Rasterio depends on GDAL. The most reliable installation path is usually Conda or another environment that installs Rasterio and GDAL together.
+
+### Conda plus pip
 
 ```bash
 conda install -c conda-forge numpy rasterio dask
-pip install https://github.com/SMByC/StackComposed/archive/master.zip
+pip install git+https://github.com/SMByC/StackComposed
 ```
 
-**Option 2 — UV:**
-
-Install stack-composed as a standalone tool (manages its own isolated environment):
+### UV tool install
 
 ```bash
 uv tool install git+https://github.com/SMByC/StackComposed
 ```
 
-Or inside a project environment:
+### UV project environment
 
 ```bash
 uv pip install git+https://github.com/SMByC/StackComposed
 ```
 
-**Option 3 — pip only (dependencies already installed system-wide):**
+## Input requirements
+
+All input rasters must:
+
+- use the same projection
+- use the same pixel size
+- be aligned to the same pixel grid
+- have at least the requested band number
+
+At least two images are required after optional date filtering.
+
+Supported input extensions are:
+
+- `.tif`
+- `.img`
+- `.hdr` for ENVI datasets
+
+Directory inputs are searched recursively for supported files.
+
+## Command line usage
 
 ```bash
-pip install git+https://github.com/SMByC/StackComposed
+stack-composed -stat STAT -bands BANDS [OPTIONS] INPUT [INPUT ...]
 ```
 
----
-
-## Quick start
+Common examples:
 
 ```bash
-# Compute the median of band 1 across all TIFFs in a directory
+# Median of band 1 from all rasters in a directory
 stack-composed -stat median -bands 1 -o /output/dir /path/to/images/
 
-# Mean of bands 1–3, using 8 cores and 500 px tiles
-stack-composed -stat mean -bands 1,2,3 -p 8 -chunks 500 -o result.tif /images/
+# Mean of bands 1, 2, and 3 using 8 local workers and 500 px chunks
+stack-composed -stat mean -bands 1,2,3 -p 8 -chunks 500 -o /output/result.tif /images/
 
-# Only process images between two dates (requires Landsat-style filenames)
+# Only include Landsat-style filenames in a date range
 stack-composed -stat max -bands 1 -start 2020-01-01 -end 2022-12-31 -o /out/ /images/
 
-# Apply preprocessing: keep only pixels in the range [1, 5] before computing the sum
+# Keep only values in [1, 5] before computing the sum
 stack-composed -stat sum -bands 1 -preproc '>=1 and <=5' -o /out/ /images/
+
+# Linear trend output is scaled by 1e6 and written as int32 by default
+stack-composed -stat linear_trend -bands 1 -o /out/ /landsat-scenes/
 ```
 
----
+## Options
 
-## Statistics (`-stat`)
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `-stat STAT` | yes | - | Statistic to compute. See [Statistics](#statistics). |
+| `-bands BANDS` | yes | - | Band number or comma-separated band list, for example `1` or `1,2,3`. |
+| `-preproc EXPR` | no | none | Preprocessing filter applied before the statistic. See [Preprocessing](#preprocessing). |
+| `-nodata VALUE` | no | file nodata | Treat this input pixel value as nodata. Overrides file metadata. |
+| `-o PATH` | no | current directory | Existing output directory or explicit `.tif` file path. |
+| `-ot DTYPE` | no | automatic | Force output dtype: `int8`, `uint16`, `uint32`, `int16`, `int32`, `float32`, or `float64`. |
+| `-p N` | no | CPU cores minus one | Number of local worker processes. Use `-p 1` to disable parallel processing. |
+| `-chunks PX` | no | `1000` | Chunk size in pixels. Larger chunks reduce overhead but use more memory. |
+| `-start YYYY-MM-DD` | no | none | Include only images on or after this date. Requires parseable Landsat metadata. |
+| `-end YYYY-MM-DD` | no | none | Include only images on or before this date. Requires parseable Landsat metadata. |
+| `INPUT` | yes | - | One or more input files or directories. |
 
-| Statistic | Description |
-|-----------|-------------|
-| `median` | Median of valid pixel values |
-| `mean` | Arithmetic mean |
-| `gmean` | Geometric mean (positive values only) |
-| `sum` | Sum of valid pixel values |
-| `max` | Maximum value |
-| `min` | Minimum value |
-| `std` | Standard deviation |
-| `valid_pixels` | Count of valid (non-nodata) observations |
-| `last_pixel` | Value of the most recent valid pixel |
-| `jday_last_pixel` | Julian day of the most recent valid pixel |
-| `jday_median` | Julian day of the temporal median |
-| `linear_trend` | OLS slope ×10⁶ (int32 output), requires date metadata |
-| `extract_NN` | Pixels equal to integer NN (e.g. `extract_2`) |
-| `percentile_NN` | NN-th percentile (e.g. `percentile_25`) |
-| `trim_mean_LL_UL` | Mean after trimming the LL–UL percentile range (e.g. `trim_mean_10_90`) |
+## Output files
 
-## Preprocessing (`-preproc`)
+If `-o` is an existing directory, StackComposed writes standard names:
 
-Applied before the statistic; pixels that fail the condition are treated as nodata.
+```text
+stack_composed_<stat>_band<band>.tif
+```
 
-| Expression | Meaning |
-|------------|---------|
-| `>3` | Keep pixels greater than 3 |
-| `>=1 and <=5` | Keep pixels in the range [1, 5] |
-| `percentile_10_90` | Keep only values between the 10th and 90th percentile |
-| `2.5_std_devs` | Keep within 2.5 standard deviations of the per-pixel mean |
-| `1.5_IQR` | Keep within 1.5 × IQR of the per-pixel median |
+Example:
 
-## Key options
+```text
+stack_composed_median_band1.tif
+```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-bands` | — | Band(s) to process, e.g. `1` or `1,2,3` |
-| `-nodata VALUE` | from file | Input pixel value to treat as nodata |
-| `-o PATH` | `./` | Output directory or explicit `.tif` filename |
-| `-ot DTYPE` | auto | Output data type (`float32`, `uint16`, …) |
-| `-p N` | cores − 1 | Number of parallel workers |
-| `-chunks PX` | 1000 | Processing tile size in pixels |
-| `-start YYYY-MM-DD` | — | Include only images on or after this date |
-| `-end YYYY-MM-DD` | — | Include only images on or before this date |
+If `-o` is an explicit `.tif` path and one band is requested, that file is used directly.
 
----
+If `-o` is an explicit `.tif` path and multiple bands are requested, StackComposed suffixes each output to avoid overwriting earlier bands:
+
+```text
+result_band1.tif
+result_band2.tif
+result_band3.tif
+```
+
+For `linear_trend`, standard output names include `x1e6` because the slope is multiplied by 1,000,000 before writing:
+
+```text
+stack_composed_linear_trend_x1e6_band1.tif
+```
+
+## Statistics
+
+| Statistic | Output meaning | Notes |
+|-----------|----------------|-------|
+| `median` | Median of valid values | Ignores nodata/NaN. |
+| `mean` | Arithmetic mean | Ignores nodata/NaN. |
+| `gmean` | Geometric mean | Uses positive values only. |
+| `sum` | Sum of valid values | Returns nodata/NaN when all observations are invalid. |
+| `max` | Maximum valid value | Ignores nodata/NaN. |
+| `min` | Minimum valid value | Ignores nodata/NaN. |
+| `std` | Standard deviation | Ignores nodata/NaN. |
+| `valid_pixels` | Count of valid observations | Output dtype is `uint8` when possible, otherwise `uint16`. |
+| `last_pixel` | Pixel value from the most recent valid dated image | Requires [filename metadata](#filename-metadata). |
+| `jday_last_pixel` | Julian day of the most recent valid dated image | Requires [filename metadata](#filename-metadata). |
+| `jday_median` | Julian day of the temporal median position | Requires [filename metadata](#filename-metadata). |
+| `linear_trend` | Ordinary least squares slope multiplied by 1e6 | Requires [filename metadata](#filename-metadata). Default output dtype is `int32`. |
+| `extract_NN` | Mean of observations equal to integer `NN` | Values not equal to `NN` are ignored. Example: `extract_2`. |
+| `percentile_NN` | `NN`th percentile | `NN` must be in `[0, 100]`. Example: `percentile_25`. |
+| `trim_mean_LL_UL` | Mean after keeping values between percentiles `LL` and `UL` | Bounds must be in `[0, 100]` and `LL <= UL`. Example: `trim_mean_10_90`. |
+
+`jday_last_pixel` and `jday_median` write `0` where a pixel has no valid dated observation.
+
+### Automatic output data types
+
+When `-ot` is omitted, StackComposed selects an output data type from the statistic and inputs:
+
+| Statistic group | Default dtype |
+|-----------------|---------------|
+| `sum`, `max`, `min`, `last_pixel` | Input dtype |
+| `jday_last_pixel`, `jday_median` | `uint16` |
+| `median`, `mean`, `gmean`, `std`, `extract_NN`, `percentile_NN`, `trim_mean_LL_UL` | `float64` if the input is `float64`, otherwise `float32` |
+| `valid_pixels` | `uint8` for fewer than 256 images, otherwise `uint16` |
+| `linear_trend` | `int32` |
+
+## Preprocessing
+
+Preprocessing is applied to each pixel time-series before the statistic. Values that fail the preprocessing condition become nodata/NaN for the statistic.
+
+| Expression | Meaning | Example |
+|------------|---------|---------|
+| `N` | Keep values greater than numeric threshold `N` | `-preproc 3` |
+| `>N`, `>=N`, `<N`, `<=N`, `==N`, `!=N` | Keep values matching a comparison | `-preproc '>0'` |
+| `>A and <B` | Keep values matching both comparisons | `-preproc '>=1 and <=5'` |
+| `percentile_LL_UL` | Keep values between per-pixel percentile bounds | `-preproc percentile_10_90` |
+| `NN_std_devs` | Keep values within `NN` standard deviations of the per-pixel mean | `-preproc 2.5_std_devs` |
+| `NN_IQR` | Keep values within `NN` interquartile ranges of the per-pixel median | `-preproc 1.5_IQR` |
+
+Only `and` is supported for compound comparison expressions.
+
+Practical preprocessing examples:
+
+- Mask invalid reflectance values before computing a mean or median, for example `-preproc '>0 and <=10000'` for scaled optical reflectance products.
+- Remove temporal outliers before a summary statistic, for example `-preproc percentile_10_90` to keep the central 80% of each pixel time-series.
+- Keep values near the local temporal distribution before trend estimation, for example `-preproc 2.5_std_devs` to reduce the effect of extreme cloud, shadow, or sensor artifacts.
+
+## Chunk size and workers
+
+The chunk size controls how much raster data each worker loads at once. For one chunk, memory is roughly proportional to:
+
+```text
+chunk_rows * chunk_cols * number_of_overlapping_images
+```
+
+General guidance:
+
+- Increase `-chunks` when processing overhead dominates and memory is available.
+- Decrease `-chunks` when memory pressure is high.
+- Increase `-p` only when enough memory exists for several chunks at once.
+- Use `-p 1` for debugging or for machines with limited memory.
+
+The chunk size is clamped to the wrapper dimensions when the requested chunk is larger than the output raster.
+
+## Filename metadata
+
+The following options and statistics require date metadata parsed from filenames:
+
+- `-start`
+- `-end`
+- `last_pixel`
+- `jday_last_pixel`
+- `jday_median`
+- `linear_trend`
+
+Supported Landsat filename styles include:
+
+### Old Landsat IDs
+
+```text
+LC80070592016320LGN00_band1.tif
+LE70070592003123LGN00_band1.tif
+```
+
+### New Landsat product IDs
+
+```text
+LC08_L1TP_007059_20161115_20170318_01_T2_b1.tif
+LE07_L1TP_007059_20030503_20160928_01_T1_b1.tif
+```
+
+### SMByC Landsat filenames
+
+```text
+Landsat_8_53_020601_7ETM_Reflec_SR_Enmask.tif
+Landsat_8_53_020823_7ETM_Reflec_SR_Enmask.tif
+```
+
+StackComposed extracts Landsat version, sensor, path, row, acquisition date, and Julian day from these patterns.
 
 ## About
 
-StackComposed was developed by the Group of Forest and Carbon Monitoring System (SMByC), operated by the Institute of Hydrology, Meteorology and Environmental Studies (IDEAM) — Colombia.
+StackComposed was designed and developed by the Forest and Carbon Monitoring System group (SMByC), operated by the Institute of Hydrology, Meteorology and Environmental Studies (IDEAM) — Colombia.
 
-**Author and developer:** Xavier C. Llano
-**Contact:** xavier.corredor.llano@gmail.com
-**SMByC:** smbyc@ideam.gov.co
+**Author and developer:** Xavier C. Llano <xavier.corredor.llano@gmail.com>  
+**Theoretical support, testing and product verification:** SMByC-PDI group
 
 ## License
 
-StackComposed is free software, licensed under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html).
+StackComposed is free/libre software, licensed under the GNU General Public License v3 (GPLv3).

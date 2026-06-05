@@ -40,7 +40,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/SMByC/StackComposed"
-Documentation = "https://smbyc.github.io/StackComposed"
+Documentation = "https://github.com/SMByC/StackComposed#readme"
 "Issue Tracker" = "https://github.com/SMByC/StackComposed/issues"
 Source = "https://github.com/SMByC/StackComposed"
 
@@ -51,7 +51,7 @@ stack-composed = "stack_composed.stack_composed_main:cli"
 version = { attr = "stack_composed.__version__" }
 
 [tool.setuptools.packages.find]
-exclude = ["tests*", "docs*"]
+exclude = ["tests*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

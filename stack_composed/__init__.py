@@ -9,8 +9,8 @@ header = """\
   Processes any GeoTIFF/ENVI input across different tiles or
   extents, writing results to a wrapper extent.
 
-  Run with '-h' for full usage, or visit the documentation:
-  https://smbyc.github.io/StackComposed
+  Run with '-h' for full usage, or read the project README:
+  https://github.com/SMByC/StackComposed#readme
 
 ====================================================================\
 """.format(ver=__version__)
@@ -45,7 +45,7 @@ Preprocessing (-preproc)
   1.5_IQR           Keep values within 1.5 × IQR of the median
 
 For more information visit:
-  https://smbyc.github.io/StackComposed
+  https://github.com/SMByC/StackComposed#readme
 
 StackComposed v{ver}  —  SMByC-IDEAM\
 """.format(ver=__version__)
