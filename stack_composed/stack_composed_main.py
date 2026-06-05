@@ -11,336 +11,532 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
 import os
-import warnings
+import sys
+from pathlib import Path
+
 import numpy as np
 import rasterio
-from dask.diagnostics import ProgressBar
-warnings.filterwarnings('ignore')
-
-# add project dir to pythonpath
-project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-if project_dir not in os.sys.path:
-    os.sys.path.append(project_dir)
+from rasterio.transform import from_bounds
 
 from stack_composed import header
 from stack_composed.image import Image
 from stack_composed.stats import statistic
 
-IMAGES_TYPES = ('.tif', '.TIF', '.img', '.IMG', '.hdr', '.HDR')
+IMAGE_EXTENSIONS = (".tif", ".img", ".hdr")
+_CONDITION_OPERATORS = frozenset(("<", "<=", ">", ">=", "==", "!="))
+
+_FIXED_STATS = frozenset({
+    "median", "mean", "gmean", "sum", "max", "min", "std",
+    "valid_pixels", "last_pixel", "jday_last_pixel", "jday_median", "linear_trend",
+})
+_PREFIX_STATS = ("extract_", "percentile_", "trim_mean_")
 
 
-def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksize, start_date, end_date, inputs):
-    # ignore warnings
+# ---------------------------------------------------------------------------
+# Validation helpers
+# ---------------------------------------------------------------------------
+
+def _validate_stat(stat):
+    """Validate the requested statistic name; print an error and return False on failure."""
+    if stat in _FIXED_STATS:
+        return True
+
+    if stat.startswith("extract_"):
+        parts = stat.split("_")
+        try:
+            if len(parts) != 2:
+                raise ValueError
+            int(parts[1])
+        except ValueError:
+            print(f"\nError: invalid statistic '{stat}'.")
+            print("  extract_NN requires one integer value, e.g. extract_2")
+            return False
+        return True
+
+    if stat.startswith("percentile_"):
+        parts = stat.split("_")
+        try:
+            if len(parts) != 2:
+                raise ValueError
+            percentile = int(parts[1])
+            if not 0 <= percentile <= 100:
+                raise ValueError
+        except ValueError:
+            print(f"\nError: invalid statistic '{stat}'.")
+            print("  percentile_NN requires one integer percentile in [0, 100], e.g. percentile_25")
+            return False
+        return True
+
+    if stat.startswith("trim_mean_"):
+        parts = stat.split("_")
+        try:
+            if len(parts) != 4:
+                raise ValueError
+            lower = int(parts[2])
+            upper = int(parts[3])
+            if not 0 <= lower <= upper <= 100:
+                raise ValueError
+        except ValueError:
+            print(f"\nError: invalid statistic '{stat}'.")
+            print("  trim_mean_LL_UL requires bounds in [0, 100] with LL <= UL, e.g. trim_mean_10_90")
+            return False
+        return True
+
+    print(f"\nError: unknown statistic '{stat}'.")
+    print(
+        "  Available statistics: extract_NN, median, mean, gmean, sum, max, min, std,\n"
+        "  valid_pixels, last_pixel, jday_last_pixel, jday_median, linear_trend,\n"
+        "  percentile_NN, trim_mean_LL_UL\n"
+        "  Run with '-h' for descriptions of each statistic."
+    )
+    return False
+
+
+def _collect_image_files(inputs):
+    """Recursively gather supported raster files from paths or directories."""
+    files = []
+    for entry in inputs:
+        entry_path = Path(entry)
+        if entry_path.is_file():
+            if entry_path.suffix.lower() in IMAGE_EXTENSIONS:
+                files.append(str(entry_path.resolve()))
+        elif entry_path.is_dir():
+            for found in sorted(entry_path.rglob("*")):
+                if found.is_file() and found.suffix.lower() in IMAGE_EXTENSIONS:
+                    files.append(str(found.resolve()))
+    return files
+
+
+def _resolve_output_file(output, stat, band, multiple_bands=False):
+    """Return the output file path for a band, or None if the path is invalid."""
+    output_path = Path(output)
+    if output_path.is_dir():
+        path = output_path / f"stack_composed_{stat}_band{band}.tif"
+    elif output_path.suffix.lower() == ".tif":
+        if output_path.parent.exists() or str(output_path.parent) == ".":
+            path = output_path if output_path.is_absolute() else Path.cwd() / output_path
+            if multiple_bands:
+                path = path.with_name(f"{path.stem}_band{band}{path.suffix}")
+        else:
+            return None
+    else:
+        return None
+
+    if stat == "linear_trend":
+        path = path.with_name(path.name.replace("linear_trend_band", "linear_trend_x1e6_band"))
+    return str(path)
+
+
+def _resolve_output_type(stat, output_type, images, band, nimages):
+    """Return the output dtype, falling back to sensible defaults per statistic."""
+    if output_type is not None:
+        return output_type
+    dtypes = {img.data_type[band] for img in images}
+    data_type = next(iter(dtypes))
+    if stat in {"sum", "max", "min", "last_pixel"}:
+        return data_type
+    if stat in {"jday_last_pixel", "jday_median"}:
+        return np.uint16
+    if stat in {"median", "mean", "gmean", "std", "snr"} or stat.startswith(_PREFIX_STATS):
+        return np.float64 if data_type == "float64" else np.float32
+    if stat == "valid_pixels":
+        return np.uint8 if nimages < 256 else np.uint16
+    if stat == "linear_trend":
+        return np.int32
+    return np.float32
+
+
+def _resolve_output_nodata(nodata, images, band):
+    """Return the nodata value to embed in the output file."""
+    if nodata is not None:
+        return nodata
+    nodata_from_file = {img.nodata_from_file[band] for img in images}
+    if len(nodata_from_file) == 1 and None not in nodata_from_file:
+        return nodata_from_file.pop()
+    if None not in nodata_from_file:
+        print(
+            "\nWarning: input images have different nodata values; "
+            "no nodata will be written to the output file."
+        )
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+
+def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksize,
+        start_date, end_date, inputs):
+    """Compute the stack-composed statistic and write the result to a GeoTIFF.
+
+    Parameters
+    ----------
+    stat:         name of the statistic (see ``_FIXED_STATS`` / ``_PREFIX_STATS``).
+    preproc:      preprocessing spec (float threshold, condition list, or string).
+    bands:        int, comma-separated string, or list of band numbers to process.
+    nodata:       pixel value to treat as nodata in the inputs (overrides file metadata).
+    output:       output directory or explicit ``.tif`` filename.
+    output_type:  numpy dtype string for the output (None = auto-select).
+    num_process:  number of parallel worker processes.
+    chunksize:    tile size (in pixels) used to divide the work.
+    start_date:   earliest date to include (``datetime.date``); requires filename metadata.
+    end_date:     latest  date to include (``datetime.date``); requires filename metadata.
+    inputs:       list of file paths or directory paths to search for images.
+    """
     print(header)
 
-    # check statistical option
-    if stat not in ('median', 'mean', 'gmean', 'sum', 'max', 'min', 'std', 'valid_pixels', 'last_pixel',
-                    'jday_last_pixel', 'jday_median', 'linear_trend') \
-            and not stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
-        print("\nError: argument '-stat' invalid choice: {}".format(stat))
-        print("choose from: extract_NN, median, mean, gmean, sum, max, min, std, valid_pixels, last_pixel, "
-              "jday_last_pixel, jday_median, linear_trend, percentile_NN, trim_mean_LL_UL")
+    if not _validate_stat(stat):
         return
-    if stat.startswith('extract_'):
-        try:
-            int(stat.split('_')[1])
-        except:
-            print("\nError: argument '-stat' invalid choice: {}".format(stat))
-            print("the extract_NN must ends with a valid number, e.g. extract_2")
-            return
-    if stat.startswith('percentile_'):
-        try:
-            int(stat.split('_')[1])
-        except:
-            print("\nError: argument '-stat' invalid choice: {}".format(stat))
-            print("the percentile must ends with a valid number, e.g. percentile_25")
-            return
-    if stat.startswith('trim_mean_'):
-        try:
-            int(stat.split('_')[2])
-            int(stat.split('_')[3])
-        except:
-            print("\nError: argument '-stat' invalid choice: {}".format(stat))
-            print("the trim_mean_LL_UL must ends with a valid limits, e.g. trim_mean_10_80")
-            return
 
-    print("\nLoading and prepare images in path(s):", flush=True)
-    # search all Image files in inputs recursively if the files are in directories
-    images_files = []
-    for _input in inputs:
-        if os.path.isfile(_input):
-            if _input.endswith(IMAGES_TYPES):
-                images_files.append(os.path.abspath(_input))
-        elif os.path.isdir(_input):
-            for root, dirs, files in os.walk(_input):
-                if len(files) != 0:
-                    files = [os.path.join(root, x) for x in files if x.endswith(IMAGES_TYPES)]
-                    [images_files.append(os.path.abspath(file)) for file in files]
+    if num_process < 1:
+        print("\nError: -p/num_process must be at least 1.")
+        sys.exit(1)
+    if chunksize < 1:
+        print("\nError: -chunks/chunksize must be at least 1 pixel.")
+        sys.exit(1)
 
-    # load bands
+    print("\nLoading and preparing images:", flush=True)
+    images_files = _collect_image_files(inputs)
+
+    Image.wrapper_extent = None
+    Image.wrapper_x_res = None
+    Image.wrapper_y_res = None
+    Image.wrapper_shape = None
+    Image.projection = None
+
+    # Normalise the bands argument to a list of ints.
     if isinstance(bands, int):
         bands = [bands]
-    if not isinstance(bands, list):
-        bands = [int(b) for b in bands.split(',')]
+    elif not isinstance(bands, list):
+        try:
+            bands = [int(b) for b in bands.split(",")]
+        except ValueError:
+            print(f"\nError: invalid -bands value '{bands}'. Use integers like 1 or 1,2,3.")
+            sys.exit(1)
 
-    # load images
+    multiple_bands = len(bands) > 1
     images = [Image(img) for img in images_files]
 
-    # filter images based on the start date and/or end date, required filename as metadata
+    # Optional date-range filter (requires date metadata embedded in filenames).
     if start_date is not None or end_date is not None:
-        [image.set_metadata_from_filename() for image in images]
+        for image in images:
+            image.set_metadata_from_filename()
         if start_date is not None:
-            images = [image for image in images if image.date >= start_date]
+            images = [img for img in images if img.date >= start_date]
         if end_date is not None:
-            images = [image for image in images if image.date <= end_date]
+            images = [img for img in images if img.date <= end_date]
 
     if len(images) <= 1:
-        print("\n\nAfter load (and filter images in range date if applicable) there are {} images to process.\n"
-              "StackComposed required at least 2 or more images to process.\n".format(len(images)))
-        exit(1)
+        print(
+            f"\nError: found {len(images)} image(s) after loading"
+            + (" and date filtering" if start_date or end_date else "")
+            + "; at least 2 images are required."
+        )
+        sys.exit(1)
 
-    # save nodata set from arguments
-    for image in images: image.nodata_from_arg = nodata
+    for image in images:
+        image.nodata_from_arg = nodata
 
-    # get wrapper extent
-    min_x = min([image.extent[0] for image in images])
-    max_y = max([image.extent[1] for image in images])
-    max_x = max([image.extent[2] for image in images])
-    min_y = min([image.extent[3] for image in images])
-    Image.wrapper_extent = [min_x, max_y, max_x, min_y]
+    min_x = min(img.extent[0] for img in images)
+    max_y = max(img.extent[1] for img in images)
+    max_x = max(img.extent[2] for img in images)
+    min_y = min(img.extent[3] for img in images)
+    wrapper_extent = [min_x, max_y, max_x, min_y]
+    wrapper_x_res = images[0].x_res
+    wrapper_y_res = images[0].y_res
+    wrapper_shape = (
+        int((max_y - min_y) / wrapper_y_res),
+        int((max_x - min_x) / wrapper_x_res),
+    )
+    Image.wrapper_extent = wrapper_extent
+    Image.wrapper_x_res = wrapper_x_res
+    Image.wrapper_y_res = wrapper_y_res
+    Image.wrapper_shape = wrapper_shape
+    projection = Image.projection
 
-    # define the properties for the raster wrapper
-    Image.wrapper_x_res = images[0].x_res
-    Image.wrapper_y_res = images[0].y_res
-    Image.wrapper_shape = (int((max_y-min_y)/Image.wrapper_y_res), int((max_x-min_x)/Image.wrapper_x_res))  # (y,x)
+    chunksize = min(chunksize, min(wrapper_shape))
 
-    # reset the chunksize with the min of width/high if apply
-    if chunksize > min(Image.wrapper_shape):
-        chunksize = min(Image.wrapper_shape)
-
-    # some information about process
     if len(images_files) != len(images):
-        print("  images loaded: {0}".format(len(images_files)))
-        print("  images to process: {0} (filtered in the range dates)".format(len(images)))
+        print(f"  images found:      {len(images_files)}")
+        print(f"  images to process: {len(images)} (after date filter)")
     else:
-        print("  images to process: {0}".format(len(images)))
-    print("  band(s) to process: {0}".format(','.join([str(b) for b in bands])))
-    print("  pixels size: {0} x {1}".format(round(Image.wrapper_x_res, 1), round(Image.wrapper_y_res, 1)))
-    print("  wrapper size: {0} x {1} pixels".format(Image.wrapper_shape[1], Image.wrapper_shape[0]))
-    print("  running in {0} cores with chunks size {1}".format(num_process, chunksize))
+        print(f"  images to process: {len(images)}")
+    print(f"  band(s):           {', '.join(str(b) for b in bands)}")
+    print(f"  pixel size:        {round(wrapper_x_res, 1)} × {round(wrapper_y_res, 1)} m")
+    print(f"  wrapper extent:    {wrapper_shape[1]} × {wrapper_shape[0]} pixels")
+    print(f"  workers / chunks:  {num_process} cores, {chunksize} px tiles")
 
-    # check
-    print("  checking bands and pixel size: ", flush=True, end="")
+    print("  checking bands and pixel size … ", flush=True, end="")
     for image in images:
         for band in bands:
             if band > image.n_bands:
-                print("\n\nError: the image '{0}' don't have the band {1} needed to process\n"
-                      .format(image.file_path, band))
-                exit(1)
-        if round(image.x_res, 1) != round(Image.wrapper_x_res, 1) or \
-           round(image.y_res, 1) != round(Image.wrapper_y_res, 1):
-            print("\n\nError: the image '{}' don't have the same pixel size to the base image: {}x{} vs {}x{}."
-                  " The stack-composed is not enabled for process yet images with different pixel size.\n"
-                  .format(image.file_path, round(image.x_res, 1), round(image.y_res, 1),
-                          round(Image.wrapper_x_res, 1), round(Image.wrapper_x_res, 1)))
-            exit(1)
-    print("ok")
+                print(
+                    f"\n\nError: '{Path(image.file_path).name}' has only {image.n_bands} "
+                    f"band(s); band {band} does not exist.\n"
+                )
+                sys.exit(1)
+        if (round(image.x_res, 1) != round(wrapper_x_res, 1)
+                or round(image.y_res, 1) != round(wrapper_y_res, 1)):
+            print(
+                f"\n\nError: '{Path(image.file_path).name}' has pixel size "
+                f"{round(image.x_res, 1)} × {round(image.y_res, 1)} m, "
+                f"but the reference is "
+                f"{round(wrapper_x_res, 1)} × {round(wrapper_y_res, 1)} m. "
+                "All images must share the same pixel size.\n"
+            )
+            sys.exit(1)
+    print("OK")
 
-    # set bounds for all images
-    [image.set_bounds() for image in images]
+    for image in images:
+        image.set_bounds()
 
-    # for some statistics that required filename as metadata
-    if stat in ["last_pixel", "jday_last_pixel", "jday_median", "linear_trend"]:
-        [image.set_metadata_from_filename() for image in images]
-
-    # registered Dask progress bar
-    pbar = ProgressBar()
-    pbar.register()
+    if stat in {"last_pixel", "jday_last_pixel", "jday_median", "linear_trend"}:
+        for image in images:
+            image.set_metadata_from_filename()
 
     for band in bands:
-        # check and set the output file before process
-        if os.path.isdir(output):
-            output_file = os.path.join(output, "stack_composed_{}_band{}.tif".format(stat, band))
-        elif output.endswith((".tif", ".TIF")) and os.path.isdir(os.path.dirname(output)):
-            output_file = output
-        elif output.endswith((".tif", ".TIF")) and os.path.dirname(output) == '':
-            output_file = os.path.join(os.getcwd(), output)
-        else:
-            print("\nError: Setting the output filename, wrong directory and/or\n"
-                  "       filename: {}\n".format(output))
-            exit(1)
+        output_file = _resolve_output_file(output, stat, band, multiple_bands)
+        if output_file is None:
+            print(
+                f"\nError: cannot resolve output path '{output}'.\n"
+                "  Provide an existing directory, or a path ending in '.tif' whose "
+                "parent directory exists."
+            )
+            sys.exit(1)
 
-        if stat in ['linear_trend']:
-            output_file = output_file.replace("stack_composed_linear_trend_band",
-                                                      "stack_composed_linear_trend_x1e6_band")
+        resolved_dtype = _resolve_output_type(stat, output_type, images, band, len(images))
+        output_nodata_value = _resolve_output_nodata(nodata, images, band)
 
-        # choose the default data type based on the statistic
-        if output_type is None:
-            # data types for the input images
-            data_type = set([image.data_type[band] for image in images]).pop()
-
-            if stat in ['sum', 'max', 'min', 'last_pixel']:
-                output_type = data_type
-            if stat in ['jday_last_pixel', 'jday_median']:
-                output_type = np.uint16
-            if stat in ['median', 'mean', 'gmean', 'std', 'snr'] or stat.startswith(('extract_', 'percentile_', 'trim_mean_')):
-                if data_type in ['float64']:
-                    output_type = np.float64
-                else:
-                    output_type = np.float32
-            if stat in ['valid_pixels']:
-                if len(images) < 256:
-                    output_type = np.uint8
-                else:
-                    output_type = np.uint16
-            if stat in ['linear_trend']:
-                output_type = np.int32
-
-        # set the nodata to the output file
-        if nodata is not None:
-            output_nodata_value = nodata
-        else:
-            # set the nodata based on the input files
-            nodata_from_file = set([image.nodata_from_file[band] for image in images])
-            if len(nodata_from_file) == 1 and None not in nodata_from_file:
-                output_nodata_value = nodata_from_file.pop()
-            elif None not in nodata_from_file:
-                output_nodata_value = None
-                print("\nWarning: the nodata value is not set to the output file "
-                      "because the input files have different nodata values.\n")
-            else:
-                output_nodata_value = None
-
-        # create the raterio profile for the output file
         profile = {
-            'driver': 'GTiff',
-            'dtype': output_type,
-            'height': Image.wrapper_shape[0],
-            'width': Image.wrapper_shape[1],
-            'count': 1,
-            'BIGTIFF': 'IF_NEEDED',
-            'nodata': output_nodata_value,
-            'crs': Image.projection,
-            'transform': rasterio.transform.from_bounds(Image.wrapper_extent[0], Image.wrapper_extent[3],
-                                                        Image.wrapper_extent[2], Image.wrapper_extent[1],
-                                                        Image.wrapper_shape[1], Image.wrapper_shape[0])
+            "driver": "GTiff",
+            "dtype": resolved_dtype,
+            "height": wrapper_shape[0],
+            "width": wrapper_shape[1],
+            "count": 1,
+            "BIGTIFF": "IF_NEEDED",
+            "nodata": output_nodata_value,
+            "crs": projection,
+            "transform": from_bounds(
+                wrapper_extent[0], wrapper_extent[3],
+                wrapper_extent[2], wrapper_extent[1],
+                wrapper_shape[1], wrapper_shape[0],
+            ),
         }
 
-        # Initialize empty TIFF file with rasterio
-        with rasterio.open(output_file, 'w+', **profile):
+        with rasterio.open(output_file, "w+", **profile):
             pass
 
-        ### process ###
-
-        # Calculate the statistics
-        print("\nProcessing the {} for band {}:".format(stat, band))
+        print(f"\nProcessing '{stat}' — band {band}:")
         statistic(stat, preproc, images, band, num_process, chunksize, output_file)
+        print(f"  → saved to {output_file}")
 
-    print("\nProcess completed!")
+    print("\nDone.")
 
 
-def cli():
-    """
-    Run as a script with arguments
-    """
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def cli(argv=None):
+    """Command-line entry point."""
     import argparse
+    import resource
+
+    # Mirror the ulimits set by the legacy bin/stack-composed wrapper:
+    # raise open-file limit (many raster files) and remove stack size cap.
+    try:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (65536, 65536))
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+    except (ValueError, resource.error):
+        pass
     from datetime import datetime
     from multiprocessing import cpu_count
 
     from stack_composed import epilog
 
-    # Create parser arguments
     parser = argparse.ArgumentParser(
-        prog='stack-composed',
-        description='Compute and generate the composed of a raster images stack',
+        prog="stack-composed",
+        description=(
+            "Compute a per-pixel statistic over a stack of georeferenced raster images\n"
+            "that may span different tiles or extents. Results are written to a single\n"
+            "GeoTIFF covering the union of all input extents."
+        ),
         epilog=epilog,
-        formatter_class=argparse.RawTextHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     def date_validator(s):
         try:
             return datetime.strptime(s, "%Y-%m-%d").date()
         except ValueError:
-            msg = "not a valid date: '{0}'".format(s)
-            raise argparse.ArgumentTypeError(msg)
+            raise argparse.ArgumentTypeError(f"'{s}' is not a valid date — expected YYYY-MM-DD")
+
+    def _split_condition(str_cond):
+        str_cond = str_cond.strip().replace(" ", "")
+        if not str_cond:
+            raise ValueError
+        if len(str_cond) > 1 and str_cond[1] == "=":
+            op = str_cond[0:2]
+            value = str_cond[2:]
+        else:
+            op = str_cond[0:1]
+            value = str_cond[1:]
+        if op not in _CONDITION_OPERATORS:
+            raise ValueError
+        return [op, float(value)]
+
+    def _validate_percentile_pair(value, label):
+        parts = value.split("_")
+        try:
+            lower = int(parts[1])
+            upper = int(parts[2])
+            if len(parts) != 3 or not 0 <= lower <= upper <= 100:
+                raise ValueError
+            return value
+        except (IndexError, ValueError):
+            raise argparse.ArgumentTypeError(
+                f"'{value}' — {label} expects integer bounds in [0, 100] with LL <= UL, "
+                f"e.g. {label.lower().replace('ll_ul', '10_90')}"
+            )
 
     def preproc_validator(preproc):
+        # Plain numeric threshold: pixels below/equal to this value are excluded.
         try:
             return float(preproc)
         except ValueError:
-            if preproc.startswith('percentile_'):
-                try:
-                    int(preproc.split('_')[1])
-                    int(preproc.split('_')[2])
-                    return preproc
-                except:
-                    msg = f"{preproc}, the percentile_LL_UL must ends with a valid limits, e.g. percentile_10_90"
-                    raise argparse.ArgumentTypeError(msg)
-            if preproc.endswith('_std_devs'):
-                try:
-                    float(preproc.split('_')[0])
-                    return preproc
-                except:
-                    msg = f"{preproc}, the NN_std_devs must starts with a valid number, e.g. 2.5_std_devs"
-                    raise argparse.ArgumentTypeError(msg)
+            pass
 
-            if preproc.endswith('_IQR'):
-                try:
-                    float(preproc.split('_')[0])
-                    return preproc
-                except:
-                    msg = f"{preproc}, the NN_IQR must starts with a valid number, e.g. 1.5_IQR"
-                    raise argparse.ArgumentTypeError(msg)
-            def split_condition(str_cond):
-                str_cond = str_cond.strip().replace(" ", "")
-                if str_cond[1] == "=":
-                    return [str_cond[0:2], float(str_cond[2::])]
-                else:
-                    return [str_cond[0:1], float(str_cond[1::])]
+        if preproc.startswith("percentile_"):
+            return _validate_percentile_pair(preproc, "percentile_LL_UL")
+
+        if preproc.endswith("_std_devs"):
             try:
-                if "and" in preproc:
-                    conditions = [split_condition(str_cond) for str_cond in preproc.split("and")]
-                    return conditions
-                else:
-                    return [split_condition(preproc)]
-            except:
-                msg = "not a valid condition to define the preprocessing: '{0}'".format(preproc)
-                raise argparse.ArgumentTypeError(msg)
+                float(preproc.split("_")[0])
+                return preproc
+            except (IndexError, ValueError):
+                raise argparse.ArgumentTypeError(
+                    f"'{preproc}' — NN_std_devs expects a numeric multiplier, "
+                    "e.g. 2.5_std_devs"
+                )
 
-    parser.add_argument('-stat', type=str, help='Statistic for compute the composed', required=True)
-    parser.add_argument('-preproc', type=preproc_validator, dest='preproc',
-                        help='Preprocessing function to define the valid data and clean from outliers before compute the statistic',
-                        required=False, default=None)
-    parser.add_argument('-bands', type=str, help='Band or bands to process, e.g. 1,2,3', required=True)
-    parser.add_argument('-nodata', type=float, required=False, default=None,
-                        help='Input pixel value to treat as nodata, int or float')
-    parser.add_argument('-o', type=str, dest='output', help='output directory and/or filename for save results',
-                        default=os.getcwd())
-    parser.add_argument('-ot', type=str, dest='output_type', help='Output data type for results', required=False,
-                        choices=('int8', 'uint16', 'uint32', 'int16', 'int32', 'float32', 'float64'))
-    parser.add_argument('-p', type=int, default=cpu_count() - 1,
-                        help='Number of process', required=False)
-    parser.add_argument('-chunks', type=int, default=1000,
-                        help='Chunks size for parallel process', required=False)
-    parser.add_argument('-start', type=date_validator, dest='start_date',
-                        help='Initial date for filter data, format YYYY-MM-DD', required=False)
-    parser.add_argument('-end', type=date_validator, dest='end_date',
-                        help='End date for filter data, format YYYY-MM-DD', required=False)
-    parser.add_argument('inputs', type=str, help='Directories or images files to process', nargs='*')
+        if preproc.endswith("_IQR"):
+            try:
+                float(preproc.split("_")[0])
+                return preproc
+            except (IndexError, ValueError):
+                raise argparse.ArgumentTypeError(
+                    f"'{preproc}' — NN_IQR expects a numeric multiplier, e.g. 1.5_IQR"
+                )
 
-    args = parser.parse_args()
+        try:
+            if "and" in preproc:
+                return [_split_condition(s) for s in preproc.split("and")]
+            return [_split_condition(preproc)]
+        except Exception:
+            raise argparse.ArgumentTypeError(
+                f"'{preproc}' is not a valid preprocessing expression.\n"
+                "  Examples: '>3', '>=1 and <=5'"
+            )
 
-    run(args.stat, args.preproc, args.bands, args.nodata, args.output, args.output_type, args.p, args.chunks,
-        args.start_date, args.end_date, args.inputs)
+    parser.add_argument(
+        "-stat", type=str, required=True,
+        metavar="STAT",
+        help=(
+            "Statistic to compute over the pixel time series.\n"
+            "Fixed: median, mean, gmean, sum, max, min, std, valid_pixels,\n"
+            "       last_pixel, jday_last_pixel, jday_median, linear_trend\n"
+            "Parameterised: extract_NN, percentile_NN, trim_mean_LL_UL\n"
+            "Run with '-h' for detailed descriptions."
+        ),
+    )
+    parser.add_argument(
+        "-preproc", type=preproc_validator, dest="preproc", default=None,
+        metavar="EXPR",
+        help=(
+            "Optional preprocessing expression applied before computing the statistic.\n"
+            "Pixels that do not satisfy the condition are treated as nodata.\n"
+            "Examples:\n"
+            "  '>3'              keep pixels greater than 3\n"
+            "  '>=1 and <=5'    keep pixels in the range [1, 5]\n"
+            "  'percentile_10_90'  keep values in the 10th–90th percentile\n"
+            "  '2.5_std_devs'   keep within 2.5 standard deviations of the mean\n"
+            "  '1.5_IQR'        keep within 1.5 × IQR of the median"
+        ),
+    )
+    parser.add_argument(
+        "-bands", type=str, required=True,
+        metavar="BANDS",
+        help="Band number(s) to process, comma-separated (e.g. 1 or 1,2,3).",
+    )
+    parser.add_argument(
+        "-nodata", type=float, default=None,
+        metavar="VALUE",
+        help=(
+            "Pixel value to treat as nodata in the input images.\n"
+            "Overrides any nodata value embedded in the file metadata."
+        ),
+    )
+    parser.add_argument(
+        "-o", type=str, dest="output", default=os.getcwd(),
+        metavar="PATH",
+        help=(
+            "Output location. Either:\n"
+            "  • an existing directory (auto-names the file), or\n"
+            "  • an explicit .tif filename whose parent directory exists.\n"
+            "Default: current working directory."
+        ),
+    )
+    parser.add_argument(
+        "-ot", type=str, dest="output_type", default=None,
+        metavar="DTYPE",
+        choices=("int8", "uint16", "uint32", "int16", "int32", "float32", "float64"),
+        help=(
+            "Force a specific output data type. When omitted, a suitable type\n"
+            "is chosen automatically based on the statistic and input types."
+        ),
+    )
+    parser.add_argument(
+        "-p", type=int, default=max(cpu_count() - 1, 1),
+        metavar="N",
+        help=(
+            f"Number of parallel worker processes (default: {max(cpu_count() - 1, 1)}, "
+            "i.e. all cores minus one).\n"
+            "Use -p 1 to disable parallel processing."
+        ),
+    )
+    parser.add_argument(
+        "-chunks", type=int, default=1000,
+        metavar="PX",
+        help=(
+            "Tile size in pixels used to divide the work across workers\n"
+            "(default: 1000). Larger tiles use more memory per worker;\n"
+            "smaller tiles reduce memory but increase scheduling overhead."
+        ),
+    )
+    parser.add_argument(
+        "-start", type=date_validator, dest="start_date",
+        metavar="YYYY-MM-DD",
+        help="Include only images on or after this date (requires Landsat-style filenames).",
+    )
+    parser.add_argument(
+        "-end", type=date_validator, dest="end_date",
+        metavar="YYYY-MM-DD",
+        help="Include only images on or before this date (requires Landsat-style filenames).",
+    )
+    parser.add_argument(
+        "inputs", type=str, nargs="*",
+        metavar="INPUT",
+        help="Input image files (.tif/.img/.hdr) or directories to search recursively.",
+    )
+
+    args = parser.parse_args(argv)
+
+    run(
+        args.stat, args.preproc, args.bands, args.nodata, args.output, args.output_type,
+        args.p, args.chunks, args.start_date, args.end_date, args.inputs,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

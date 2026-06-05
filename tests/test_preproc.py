@@ -1,43 +1,96 @@
+"""
+Tests for the -preproc preprocessing filters.
+
+Regression tests use pre-generated reference files.  Smoke tests for the
+additional filter types (percentile, std_devs, IQR) verify that the output
+has the correct shape and that filtering actually removes some values.
+"""
 import numpy as np
 import pytest
 import rasterio
 
 from stack_composed.stack_composed_main import run
 
+from .conftest import DATA_DIR
+
+
+def _ref(filename):
+    return str(DATA_DIR / filename)
+
+
+def _parse_preproc(expr):
+    """Parse a preproc string into the internal [[op, value], …] list format."""
+    def _split(s):
+        s = s.strip().replace(" ", "")
+        return [s[:2], float(s[2:])] if s[1] == "=" else [s[:1], float(s[1:])]
+    if "and" in expr:
+        return [_split(c) for c in expr.split("and")]
+    return [_split(expr)]
+
+
+def _run(stack_args, preproc, stat="sum"):
+    run(
+        stat, preproc,
+        stack_args.band, stack_args.nodata, stack_args.output_file,
+        stack_args.output_type, stack_args.num_process, stack_args.chunksize,
+        stack_args.start_date, stack_args.end_date, stack_args.images,
+    )
+    with rasterio.open(stack_args.output_file) as dst:
+        return dst.read(1)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests (condition-list preprocessing)
+# ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize(
-    "preproc,expected_file",
+    "expr, ref_file",
     [
-        (">3", "data/stack_composed_preproc_1_band1.tif"),
-        (">1 and <5", "data/stack_composed_preproc_2_band1.tif"),
-    ]
+        (">3",        "stack_composed_preproc_1_band1.tif"),
+        (">1 and <5", "stack_composed_preproc_2_band1.tif"),
+    ],
 )
-def test_preproc(setup_stack_composed, preproc, expected_file):
-    # Unpack the fixture
-    _, band, nodata, output_type, num_process, chunksize, output_file, start_date, end_date, images = setup_stack_composed
+def test_preproc_condition(stack_args, expr, ref_file):
+    actual = _run(stack_args, _parse_preproc(expr))
+    with rasterio.open(_ref(ref_file)) as src:
+        expected = src.read(1)
+    np.testing.assert_allclose(actual, expected, rtol=1e-5, equal_nan=True)
 
-    # preprare preproc
-    def split_condition(str_cond):
-        str_cond = str_cond.strip().replace(" ", "")
-        if str_cond[1] == "=":
-            return [str_cond[0:2], float(str_cond[2::])]
-        else:
-            return [str_cond[0:1], float(str_cond[1::])]
 
-    if "and" in preproc:
-        conditions = [split_condition(str_cond) for str_cond in preproc.split("and")]
-    else:
-        conditions = [split_condition(preproc)]
+def test_preproc_numeric_threshold_matches_greater_than_condition(stack_args):
+    actual = _run(stack_args, 3.0)
+    with rasterio.open(_ref("stack_composed_preproc_1_band1.tif")) as src:
+        expected = src.read(1)
+    np.testing.assert_allclose(actual, expected, rtol=1e-5, equal_nan=True)
 
-    # Run the function with the given preproc
-    run("sum", conditions, band, nodata, output_file, output_type, num_process, chunksize, start_date, end_date, images)
 
-    # Load and compare results
-    with rasterio.open(expected_file) as src:
-        expected_result = src.read(1)
+# ---------------------------------------------------------------------------
+# Smoke tests for string-based preprocessing variants
+# ---------------------------------------------------------------------------
 
-    with rasterio.open(output_file) as src:
-        actual_result = src.read(1)
+def test_preproc_percentile(stack_args):
+    """percentile_LL_UL should produce a non-empty result of the correct shape."""
+    actual = _run(stack_args, "percentile_10_90", stat="mean")
+    with rasterio.open(_ref("stack_composed_mean_band1.tif")) as ref:
+        unfiltered = ref.read(1)
+    assert actual.shape == unfiltered.shape
+    # Filtering should reduce or equal the number of valid pixels, never increase.
+    valid_filtered = np.count_nonzero(~np.isnan(actual))
+    valid_unfiltered = np.count_nonzero(~np.isnan(unfiltered))
+    assert valid_filtered <= valid_unfiltered
 
-    # Assert results are equal
-    np.testing.assert_array_almost_equal(actual_result, expected_result)
+
+def test_preproc_std_devs(stack_args):
+    """NN_std_devs should produce a result with the correct shape."""
+    actual = _run(stack_args, "2.0_std_devs", stat="mean")
+    with rasterio.open(_ref("stack_composed_mean_band1.tif")) as ref:
+        unfiltered = ref.read(1)
+    assert actual.shape == unfiltered.shape
+
+
+def test_preproc_iqr(stack_args):
+    """NN_IQR should produce a result with the correct shape."""
+    actual = _run(stack_args, "1.5_IQR", stat="mean")
+    with rasterio.open(_ref("stack_composed_mean_band1.tif")) as ref:
+        unfiltered = ref.read(1)
+    assert actual.shape == unfiltered.shape

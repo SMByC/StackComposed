@@ -1,24 +1,51 @@
-
-
 __version__ = '25.3'  # year.month.revision
 
+header = """\
+====================================================================
 
-header = \
-'''====================================================================
+  StackComposed v{ver}
 
-StackComposed v{}
+  Compute statistics over a stack of georeferenced raster images.
+  Processes any GeoTIFF/ENVI input across different tiles or
+  extents, writing results to a wrapper extent.
 
-  Compute and generate the composed of a raster images stack
+  Run with '-h' for full usage, or visit the documentation:
+  https://smbyc.github.io/StackComposed
 
-Run with '-h' for more options or visit the documentation:
-https://smbyc.github.io/StackComposed
+====================================================================\
+""".format(ver=__version__)
 
-===================================================================='''.format(__version__)
+epilog = """\
+Statistics reference
+--------------------
+  median            Median value across the time axis
+  mean              Arithmetic mean
+  gmean             Geometric mean (positive values only)
+  sum               Sum of valid pixel values
+  max               Maximum value
+  min               Minimum value
+  std               Standard deviation
+  valid_pixels      Count of valid (non-nodata) observations
+  last_pixel        Value of the most recent valid pixel
+  jday_last_pixel   Julian day of the most recent valid pixel
+  jday_median       Julian day of the temporal median
+  linear_trend      Linear regression slope (×10⁶, int32 output)
+  extract_NN        Isolate pixels equal to integer value NN
+  percentile_NN     NN-th percentile (e.g. percentile_25)
+  trim_mean_LL_UL   Mean after trimming outside the LL–UL percentile
+                    range (e.g. trim_mean_10_90)
 
-epilog = \
-'''
+Preprocessing (-preproc)
+------------------------
+  >3                Keep only pixels greater than 3
+  >=1 and <=5       Keep pixels within the range [1, 5]
+  percentile_10_90  Keep only values in the 10th–90th percentile
+  2.5_std_devs      Keep values within 2.5 standard deviations of
+                    the per-pixel mean
+  1.5_IQR           Keep values within 1.5 × IQR of the median
+
 For more information visit:
-https://smbyc.github.io/StackComposed
+  https://smbyc.github.io/StackComposed
 
-StackComposed v{}
-SMByC-IDEAM'''.format(__version__)
+StackComposed v{ver}  —  SMByC-IDEAM\
+""".format(ver=__version__)
