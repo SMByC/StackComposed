@@ -1,5 +1,5 @@
 """
-Unit tests for stack_composed/parse.py.
+Unit tests for core/parse.py.
 
 parse.py is pure Python (no rasterio), so these tests run fast and cover all
 three filename formats plus the dispatch function and error paths.
@@ -8,7 +8,7 @@ import datetime
 
 import pytest
 
-from stack_composed.parse import (
+from core.parse import (
     calc_date,
     parse_filename,
     parse_landsat_ID_newFilename,

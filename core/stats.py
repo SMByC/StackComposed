@@ -18,7 +18,7 @@ import dask.array as da
 import numpy as np
 import rasterio
 
-from stack_composed.image import Image, reset_dataset_cache
+from core.image import Image, reset_dataset_cache
 
 # Safe operator dispatch — replaces eval() for -preproc CLI conditions.
 _CMP_OPS = {

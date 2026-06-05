@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import rasterio
 
-from stack_composed.stack_composed_main import _resolve_output_file, run
+from stack_composed import _resolve_output_file, run
 
 from .conftest import DATA_DIR
 

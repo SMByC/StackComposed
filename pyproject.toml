@@ -45,10 +45,13 @@ Documentation = "https://github.com/SMByC/StackComposed#readme"
 Source = "https://github.com/SMByC/StackComposed"
 
 [project.scripts]
-stack-composed = "stack_composed.stack_composed_main:cli"
+stack-composed = "stack_composed:cli"
 
 [tool.setuptools.dynamic]
-version = { attr = "stack_composed.__version__" }
+version = { attr = "core.__version__" }
+
+[tool.setuptools]
+py-modules = ["stack_composed"]
 
 [tool.setuptools.packages.find]
 exclude = ["tests*"]

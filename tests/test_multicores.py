@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import rasterio
 
-from stack_composed.stack_composed_main import run
+from stack_composed import run
 
 from .conftest import DATA_DIR
 

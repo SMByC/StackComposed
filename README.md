@@ -40,7 +40,7 @@ StackComposed processes chunks in local worker processes. The main process is th
 
 <img src="img/chunks.png" height="150px" style="margin: auto;display: block;">
 
-Distributed execution is not available in the current release. The `stack-composed-distributed` module exits with a message explaining that the current engine uses local worker processes.
+Distributed execution is not available in the current release; use `-p` for local worker processes.
 
 ## Installation
 

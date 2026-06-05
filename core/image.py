@@ -16,7 +16,7 @@ import numpy as np
 import rasterio
 from rasterio.crs import CRS
 
-from stack_composed.parse import parse_filename
+from core.parse import parse_filename
 
 # ENVI dataset extensions to probe when an ".hdr" path is given.
 _ENVI_DATASET_EXTS = ("", ".dat", ".raw", ".sli", ".hyspex", ".img")

@@ -19,9 +19,9 @@ import numpy as np
 import rasterio
 from rasterio.transform import from_bounds
 
-from stack_composed import header
-from stack_composed.image import Image
-from stack_composed.stats import statistic
+from core import header
+from core.image import Image
+from core.stats import statistic
 
 IMAGE_EXTENSIONS = (".tif", ".img", ".hdr")
 _CONDITION_OPERATORS = frozenset(("<", "<=", ">", ">=", "==", "!="))
@@ -353,7 +353,7 @@ def cli(argv=None):
     from datetime import datetime
     from multiprocessing import cpu_count
 
-    from stack_composed import epilog
+    from core import epilog
 
     parser = argparse.ArgumentParser(
         prog="stack-composed",

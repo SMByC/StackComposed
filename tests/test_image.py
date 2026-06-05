@@ -1,5 +1,5 @@
 """
-Unit tests for stack_composed/image.py.
+Unit tests for core/image.py.
 
 Tests cover Image metadata loading, bounds calculation, chunk retrieval,
 nodata masking, the ENVI dataset-path resolver, and the get_chunk_in_wrapper
@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import rasterio
 
-from stack_composed.image import Image, reset_dataset_cache
+from core.image import Image, reset_dataset_cache
 
 from .conftest import DATA_DIR
 
