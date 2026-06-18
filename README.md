@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">StackComposed</h1>
 
-StackComposed computes a per-pixel statistic over a stack of georeferenced raster images, such as a Landsat time series. Input images can cover different scenes, tiles, or partially overlapping areas. StackComposed builds one wrapper extent that covers all inputs, reads each processing tile from every image, masks nodata values as `NaN`, and writes the selected statistic to a GeoTIFF.
+StackComposed computes a per-pixel statistic over a stack of georeferenced raster images, such as a Landsat time series. Input images can cover different scenes, tiles, or partially overlapping areas. StackComposed builds one wrapper extent that covers all inputs, reads each processing chunk from every image, masks nodata values as `NaN`, and writes the selected statistic to a GeoTIFF.
 
 Typical uses include computing median reflectance, counting valid observations, extracting the most recent valid pixel, returning the Julian day of a temporal statistic, or estimating a per-pixel linear trend from dated Landsat scenes.
 
@@ -18,7 +18,7 @@ The workflow is:
 3. Build the wrapper extent that covers all images.
 4. Split the wrapper into chunks.
 5. Read only the current chunk from every input image.
-6. Apply optional preprocessing filters.
+6. Apply the optional preprocessing filter.
 7. Compute the statistic along the Z-axis.
 8. Stream chunk results to the output GeoTIFF.
 
@@ -90,6 +90,10 @@ Supported input extensions are:
 - `.hdr` for ENVI datasets
 
 Directory inputs are searched recursively for supported files.
+
+## Important: mask your input nodata
+
+StackComposed relies on nodata metadata to distinguish valid pixels from missing observations along the Z-axis. If your rasters do not declare a nodata value, set it explicitly with `-nodata` — otherwise pixels that should be ignored (background, fill, or out-of-scene areas) will enter the statistic as real values and skew the result. For example, a `0` fill value in a reflectance raster will drag the mean down, inflate the valid pixel count, and corrupt any trend estimate. Always confirm that each input either has a correct nodata value in its metadata or supplies one through `-nodata` before running the statistic.
 
 ## Command line usage
 
@@ -178,7 +182,7 @@ stack_composed_linear_trend_x1e6_band1.tif
 | `jday_last_pixel` | Julian day of the most recent valid dated image | Requires [filename metadata](#filename-metadata). |
 | `jday_median` | Julian day of the temporal median position | Requires [filename metadata](#filename-metadata). |
 | `linear_trend` | Ordinary least squares slope multiplied by 1e6 | Requires [filename metadata](#filename-metadata). Default output dtype is `int32`. |
-| `extract_NN` | Mean of observations equal to integer `NN` | Values not equal to `NN` are ignored. Example: `extract_2`. |
+| `extract_NN` | `NN` where at least one observation equals `NN`, otherwise nodata/NaN | Extracts the value `NN` from the stack. Any other value becomes nodata/NaN. Example: `extract_2`. |
 | `percentile_NN` | `NN`th percentile | `NN` must be in `[0, 100]`. Example: `percentile_25`. |
 | `trim_mean_LL_UL` | Mean after keeping values between percentiles `LL` and `UL` | Bounds must be in `[0, 100]` and `LL <= UL`. Example: `trim_mean_10_90`. |
 
@@ -190,7 +194,8 @@ When `-ot` is omitted, StackComposed selects an output data type from the statis
 
 | Statistic group | Default dtype |
 |-----------------|---------------|
-| `sum`, `max`, `min`, `last_pixel` | Input dtype |
+| `max`, `min`, `last_pixel` | Input dtype |
+| `sum` | `float64` if the input is `float64`, otherwise `float32` (avoids integer overflow) |
 | `jday_last_pixel`, `jday_median` | `uint16` |
 | `median`, `mean`, `gmean`, `std`, `extract_NN`, `percentile_NN`, `trim_mean_LL_UL` | `float64` if the input is `float64`, otherwise `float32` |
 | `valid_pixels` | `uint8` for fewer than 256 images, otherwise `uint16` |
@@ -198,11 +203,10 @@ When `-ot` is omitted, StackComposed selects an output data type from the statis
 
 ## Preprocessing
 
-Preprocessing is applied to each pixel's stack of values before the statistic. Values that fail the preprocessing condition become nodata/NaN for the statistic.
+Preprocessing is applied to each pixel's stack of values before the statistic. Values that fail the preprocessing condition become nodata/NaN for the statistic. Enter the expression as a string in the `-preproc` argument.
 
 | Expression | Meaning | Example |
 |------------|---------|---------|
-| `N` | Keep values greater than numeric threshold `N` | `-preproc 3` |
 | `>N`, `>=N`, `<N`, `<=N`, `==N`, `!=N` | Keep values matching a comparison | `-preproc '>0'` |
 | `>A and <B` | Keep values matching both comparisons | `-preproc '>=1 and <=5'` |
 | `percentile_LL_UL` | Keep values between per-pixel percentile bounds | `-preproc percentile_10_90` |

@@ -404,12 +404,6 @@ def cli(argv=None):
             )
 
     def preproc_validator(preproc):
-        # Plain numeric threshold: pixels below/equal to this value are excluded.
-        try:
-            return float(preproc)
-        except ValueError:
-            pass
-
         if preproc.startswith("percentile_"):
             return _validate_percentile_pair(preproc, "percentile_LL_UL")
 
@@ -439,7 +433,8 @@ def cli(argv=None):
         except Exception:
             raise argparse.ArgumentTypeError(
                 f"'{preproc}' is not a valid preprocessing expression.\n"
-                "  Examples: '>3', '>=1 and <=5'"
+                "  Examples: '>3', '>=1 and <=5', 'percentile_10_90', "
+                "'2.5_std_devs', '1.5_IQR'"
             )
 
     parser.add_argument(
@@ -458,10 +453,10 @@ def cli(argv=None):
         metavar="EXPR",
         help=(
             "Optional preprocessing expression applied before computing the statistic.\n"
-            "Pixels that do not satisfy the condition are treated as nodata.\n"
+            "Values that do not satisfy the condition are treated as nodata.\n"
             "Examples:\n"
-            "  '>3'              keep pixels greater than 3\n"
-            "  '>=1 and <=5'    keep pixels in the range [1, 5]\n"
+            "  '>3'              keep values greater than 3\n"
+            "  '>=1 and <=5'    keep values in the range [1, 5]\n"
             "  'percentile_10_90'  keep values in the 10th–90th percentile\n"
             "  '2.5_std_devs'   keep within 2.5 standard deviations of the mean\n"
             "  '1.5_IQR'        keep within 1.5 × IQR of the median"
@@ -470,7 +465,7 @@ def cli(argv=None):
     parser.add_argument(
         "-bands", type=str, required=True,
         metavar="BANDS",
-        help="Band number(s) to process, comma-separated (e.g. 1 or 1,2,3).",
+        help="Band number or comma-separated band list (e.g. 1 or 1,2,3).",
     )
     parser.add_argument(
         "-nodata", type=float, default=None,
@@ -512,9 +507,9 @@ def cli(argv=None):
         "-chunks", type=int, default=1000,
         metavar="PX",
         help=(
-            "Tile size in pixels used to divide the work across workers\n"
-            "(default: 1000). Larger tiles use more memory per worker;\n"
-            "smaller tiles reduce memory but increase scheduling overhead."
+            "Chunk size in pixels used to divide the work across workers\n"
+            "(default: 1000). Larger chunks use more memory per worker;\n"
+            "smaller chunks reduce memory but increase scheduling overhead."
         ),
     )
     parser.add_argument(

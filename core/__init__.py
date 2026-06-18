@@ -27,18 +27,23 @@ Statistics reference
   std               Standard deviation
   valid_pixels      Count of valid (non-nodata) observations
   last_pixel        Value of the most recent valid pixel
+                    (requires filename metadata)
   jday_last_pixel   Julian day of the most recent valid pixel
+                    (requires filename metadata)
   jday_median       Julian day of the temporal median
+                    (requires filename metadata)
   linear_trend      Linear regression slope (×10⁶, int32 output)
-  extract_NN        Isolate pixels equal to integer value NN
+                    (requires filename metadata)
+  extract_NN        Extract value NN from the stack; any other value
+                    becomes nodata/NaN (e.g. extract_2)
   percentile_NN     NN-th percentile (e.g. percentile_25)
-  trim_mean_LL_UL   Mean after trimming outside the LL–UL percentile
-                    range (e.g. trim_mean_10_90)
+  trim_mean_LL_UL   Mean after keeping values between percentiles LL and UL
+                    (bounds [0, 100], LL <= UL; e.g. trim_mean_10_90)
 
 Preprocessing (-preproc)
 ------------------------
-  >3                Keep only pixels greater than 3
-  >=1 and <=5       Keep pixels within the range [1, 5]
+  >3                Keep only values greater than 3
+  >=1 and <=5       Keep values within the range [1, 5]
   percentile_10_90  Keep only values in the 10th–90th percentile
   2.5_std_devs      Keep values within 2.5 standard deviations of
                     the per-pixel mean
