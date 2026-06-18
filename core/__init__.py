@@ -18,7 +18,7 @@ header = """\
 epilog = """\
 Statistics reference
 --------------------
-  median            Median value across the time axis
+  median            Median value across the Z-axis
   mean              Arithmetic mean
   gmean             Geometric mean (positive values only)
   sum               Sum of valid pixel values

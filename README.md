@@ -9,7 +9,7 @@ Typical uses include computing median reflectance, counting valid observations, 
 
 ## Core idea
 
-For each output pixel, StackComposed builds a time-series from all input images that overlap that pixel. The statistic is computed along the time axis only from valid values. Pixels outside an image footprint are treated as missing values.
+For each output pixel, StackComposed builds a stack of values from all input images that overlap that pixel. The statistic is computed along the Z-axis only from valid values. Pixels outside an image footprint are treated as missing values.
 
 The workflow is:
 
@@ -19,7 +19,7 @@ The workflow is:
 4. Split the wrapper into chunks.
 5. Read only the current chunk from every input image.
 6. Apply optional preprocessing filters.
-7. Compute the statistic along the time axis.
+7. Compute the statistic along the Z-axis.
 8. Stream chunk results to the output GeoTIFF.
 
 ### Wrapper extent
@@ -30,7 +30,7 @@ The wrapper extent is the minimum bounding extent that covers all input images. 
 
 ### Data cube by chunk
 
-For each chunk, StackComposed reads the corresponding window from every image and arranges the values as a small data cube: rows, columns, and time. The statistic is computed along the time axis for every pixel in that chunk.
+For each chunk, StackComposed reads the corresponding window from every image and arranges the values as a small data cube: rows, columns, and depth (Z-axis). The statistic is computed along the Z-axis for every pixel in that chunk.
 
 <img src="img/process.png" height="400px" style="margin: auto;display: block;">
 
@@ -198,7 +198,7 @@ When `-ot` is omitted, StackComposed selects an output data type from the statis
 
 ## Preprocessing
 
-Preprocessing is applied to each pixel time-series before the statistic. Values that fail the preprocessing condition become nodata/NaN for the statistic.
+Preprocessing is applied to each pixel's stack of values before the statistic. Values that fail the preprocessing condition become nodata/NaN for the statistic.
 
 | Expression | Meaning | Example |
 |------------|---------|---------|
@@ -214,8 +214,8 @@ Only `and` is supported for compound comparison expressions.
 Practical preprocessing examples:
 
 - Mask invalid reflectance values before computing a mean or median, for example `-preproc '>0 and <=10000'` for scaled optical reflectance products.
-- Remove temporal outliers before a summary statistic, for example `-preproc percentile_10_90` to keep the central 80% of each pixel time-series.
-- Keep values near the local temporal distribution before trend estimation, for example `-preproc 2.5_std_devs` to reduce the effect of extreme cloud, shadow, or sensor artifacts.
+- Remove outliers along the stack before a summary statistic, for example `-preproc percentile_10_90` to keep the central 80% of each pixel's stack of values.
+- Keep values near the local distribution along the stack before trend estimation, for example `-preproc 2.5_std_devs` to reduce the effect of extreme cloud, shadow, or sensor artifacts.
 
 ## Chunk size and workers
 

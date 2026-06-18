@@ -446,7 +446,7 @@ def cli(argv=None):
         "-stat", type=str, required=True,
         metavar="STAT",
         help=(
-            "Statistic to compute over the pixel time series.\n"
+            "Statistic to compute over the pixel stack along the Z-axis.\n"
             "Fixed: median, mean, gmean, sum, max, min, std, valid_pixels,\n"
             "       last_pixel, jday_last_pixel, jday_median, linear_trend\n"
             "Parameterised: extract_NN, percentile_NN, trim_mean_LL_UL\n"
