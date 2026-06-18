@@ -60,14 +60,17 @@ def _build_stat_func(stat):
         return mean_stat
 
     # Geometric mean as exp(mean(log(x))) — naturally handles NaN, vectorized.
-    # Non-positive values are dropped (log undefined); pixels with no valid
-    # positive samples become NaN.
+    # Zero values are preserved (gmean of a series containing zero is zero);
+    # negative values are dropped because log is undefined for real numbers.
     if stat == "gmean":
         def gmean_stat(stack_chunk, metadata):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
+                valid = ~np.isnan(stack_chunk)
+                has_zero = ((stack_chunk == 0) & valid).any(axis=2)
                 positive = np.where(stack_chunk > 0, stack_chunk, np.nan)
-                return np.exp(np.nanmean(np.log(positive), axis=2))
+                gmean = np.exp(np.nanmean(np.log(positive), axis=2))
+                return np.where(has_zero, 0, gmean)
         return gmean_stat
 
     if stat == "sum":
@@ -364,12 +367,15 @@ def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
     _emit_progress(0, total)
     try:
         with rasterio.open(output_file, "r+") as dst:
+            resolved_dtype = dst.dtypes[0]
             if num_process <= 1:
                 # Single-process path: avoids fork overhead and is easier to debug.
                 _init_worker(images, band, stat, preproc, wrapper_state)
                 done = 0
                 for task in tasks:
                     window, data = _compute_chunk(task)
+                    if np.issubdtype(resolved_dtype, np.integer):
+                        data = np.where(np.isnan(data), dst.nodata if dst.nodata is not None else 0, data)
                     dst.write(data, 1, window=_window_from_tuple(window))
                     done += 1
                     _emit_progress(done, total)
@@ -383,6 +389,8 @@ def statistic(stat, preproc, images, band, num_process, chunksize, output_file):
                     done = 0
                     for fut in as_completed(futures):
                         window, data = fut.result()
+                        if np.issubdtype(resolved_dtype, np.integer):
+                            data = np.where(np.isnan(data), dst.nodata if dst.nodata is not None else 0, data)
                         dst.write(data, 1, window=_window_from_tuple(window))
                         done += 1
                         _emit_progress(done, total)

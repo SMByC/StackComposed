@@ -134,8 +134,11 @@ def _resolve_output_type(stat, output_type, images, band, nimages):
         return output_type
     dtypes = {img.data_type[band] for img in images}
     data_type = next(iter(dtypes))
-    if stat in {"sum", "max", "min", "last_pixel"}:
+    if stat in {"max", "min", "last_pixel"}:
         return data_type
+    if stat == "sum":
+        # Default to float to avoid integer overflow when summing many images
+        return np.float64 if data_type == "float64" else np.float32
     if stat in {"jday_last_pixel", "jday_median"}:
         return np.uint16
     if stat in {"median", "mean", "gmean", "std", "snr"} or stat.startswith(_PREFIX_STATS):
