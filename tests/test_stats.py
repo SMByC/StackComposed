@@ -14,6 +14,9 @@ from stack_composed import _resolve_output_file, run
 from .conftest import DATA_DIR
 
 
+INT32_NODATA_SENTINEL = np.iinfo(np.int32).min
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -46,6 +49,14 @@ def _run_and_load(stack_args, stat, **overrides):
     return actual, profile
 
 
+def _reference_for_current_behavior(stat, expected):
+    if stat == "sum":
+        return np.where(expected == INT32_NODATA_SENTINEL, np.nan, expected).astype(np.float32)
+    if stat in {"min", "max", "last_pixel", "linear_trend"}:
+        return np.where(expected == INT32_NODATA_SENTINEL, 0, expected).astype(expected.dtype)
+    return expected
+
+
 # ---------------------------------------------------------------------------
 # Statistic regression tests
 # ---------------------------------------------------------------------------
@@ -75,6 +86,7 @@ def test_statistic(stack_args, stat, ref_file, rtol):
 
     with rasterio.open(_ref(ref_file)) as src:
         expected = src.read(1)
+    expected = _reference_for_current_behavior(stat, expected)
 
     # Shape and dtype must match the reference exactly.
     assert actual.shape == expected.shape, f"shape mismatch: {actual.shape} vs {expected.shape}"

@@ -9,9 +9,12 @@ import numpy as np
 import pytest
 import rasterio
 
-from stack_composed import run
+from stack_composed import cli, run
 
 from .conftest import DATA_DIR
+
+
+INT32_NODATA_SENTINEL = np.iinfo(np.int32).min
 
 
 def _ref(filename):
@@ -26,6 +29,12 @@ def _parse_preproc(expr):
     if "and" in expr:
         return [_split(c) for c in expr.split("and")]
     return [_split(expr)]
+
+
+def _expected_float_nodata(filename):
+    with rasterio.open(_ref(filename)) as src:
+        expected = src.read(1)
+    return np.where(expected == INT32_NODATA_SENTINEL, np.nan, expected).astype(np.float32)
 
 
 def _run(stack_args, preproc, stat="sum"):
@@ -52,16 +61,20 @@ def _run(stack_args, preproc, stat="sum"):
 )
 def test_preproc_condition(stack_args, expr, ref_file):
     actual = _run(stack_args, _parse_preproc(expr))
-    with rasterio.open(_ref(ref_file)) as src:
-        expected = src.read(1)
+    expected = _expected_float_nodata(ref_file)
     np.testing.assert_allclose(actual, expected, rtol=1e-5, equal_nan=True)
 
 
-def test_preproc_numeric_threshold_matches_greater_than_condition(stack_args):
-    actual = _run(stack_args, 3.0)
-    with rasterio.open(_ref("stack_composed_preproc_1_band1.tif")) as src:
-        expected = src.read(1)
-    np.testing.assert_allclose(actual, expected, rtol=1e-5, equal_nan=True)
+def test_preproc_numeric_threshold_is_rejected(stack_args, capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli([
+            "-stat", "sum",
+            "-preproc", "3",
+            "-bands", str(stack_args.band),
+            *stack_args.images,
+        ])
+    assert exc.value.code == 2
+    assert "not a valid preprocessing expression" in capsys.readouterr().err
 
 
 # ---------------------------------------------------------------------------

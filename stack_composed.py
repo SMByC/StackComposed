@@ -176,7 +176,7 @@ def run(stat, preproc, bands, nodata, output, output_type, num_process, chunksiz
     Parameters
     ----------
     stat:         name of the statistic (see ``_FIXED_STATS`` / ``_PREFIX_STATS``).
-    preproc:      preprocessing spec (float threshold, condition list, or string).
+    preproc:      preprocessing spec (condition list or string).
     bands:        int, comma-separated string, or list of band numbers to process.
     nodata:       pixel value to treat as nodata in the inputs (overrides file metadata).
     output:       output directory or explicit ``.tif`` filename.
